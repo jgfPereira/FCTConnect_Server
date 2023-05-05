@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
@@ -6,8 +6,8 @@ import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import pt.unl.fct.di.apdc.adcdemo.util.AuthToken;
-import pt.unl.fct.di.apdc.adcdemo.util.RolePermissions;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RolePermissions;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;

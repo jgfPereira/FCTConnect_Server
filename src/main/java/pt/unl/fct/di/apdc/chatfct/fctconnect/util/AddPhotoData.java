@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.util;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 import org.apache.commons.io.FilenameUtils;
 

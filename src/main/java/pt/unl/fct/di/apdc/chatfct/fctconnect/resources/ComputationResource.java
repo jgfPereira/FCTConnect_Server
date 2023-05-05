@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.tasks.v2.*;
 import com.google.gson.Gson;
@@ -34,9 +34,10 @@ public class ComputationResource {
     @GET
     @Path("/hello")
     @Produces(MediaType.TEXT_PLAIN)
-    public Response hello() throws Exception {
+    public Response hello() {
         try {
-            throw new Exception("UPS");
+            LOG.fine("Saying hello");
+            return Response.ok().entity("Hello").build();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception on method /hello", e);
             return Response.temporaryRedirect(URI.create("/error/500.html")).build();
@@ -67,7 +68,7 @@ public class ComputationResource {
     @GET
     @Path("/compute")
     public Response triggerExecuteComputeTask() throws IOException {
-        String projectId = "adc-demo-383221"; // TODO change to new project
+        String projectId = "fctconnect";
         String queueName = "default";
         String location = "europe-west6";
         LOG.log(Level.INFO, projectId + " :: " + queueName + " :: " + location);

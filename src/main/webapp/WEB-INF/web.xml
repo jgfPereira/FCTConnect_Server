@@ -23,7 +23,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.packages</param-name>
-            <param-value>pt.unl.fct.di.apdc.adcdemo.resources</param-value>
+            <param-value>pt.unl.fct.di.apdc.chatfct.fctconnect.resources</param-value>
         </init-param>
         <init-param>
             <param-name>jersey.config.server.provider.scanning.recursive</param-name>
@@ -31,7 +31,7 @@
         </init-param>
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
-            <param-value>pt.unl.fct.di.apdc.adcdemo.filters.AdditionalResponseHeadersFilter</param-value>
+            <param-value>pt.unl.fct.di.apdc.chatfct.fctconnect.filters.AdditionalResponseHeadersFilter</param-value>
         </init-param>
         <init-param>
             <param-name>jersey.config.servlet.filter.contextPath</param-name>
@@ -64,7 +64,7 @@
     </security-constraint>
     <servlet>
         <servlet-name>servlet-storage</servlet-name>
-        <servlet-class>pt.unl.fct.di.apdc.adcdemo.servlets.MediaResourceServlet</servlet-class>
+        <servlet-class>pt.unl.fct.di.apdc.chatfct.fctconnect.servlets.MediaResourceServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>servlet-storage</servlet-name>

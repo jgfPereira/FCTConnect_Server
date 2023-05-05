@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.servlets;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.servlets;
 
 import com.google.cloud.storage.*;
 
@@ -13,7 +13,7 @@ import java.util.Collections;
 @SuppressWarnings("serial")
 public class MediaResourceServlet extends HttpServlet {
 
-    public static final String BUCKET = "adc-demo-383221.appspot.com";
+    public static final String BUCKET = "fctconnect.appspot.com";
     public static final String USER_PHOTO_NAME_FMT = "photo_%s";
 
 

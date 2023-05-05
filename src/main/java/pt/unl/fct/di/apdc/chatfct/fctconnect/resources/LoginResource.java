@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
@@ -9,8 +9,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.codec.digest.DigestUtils;
-import pt.unl.fct.di.apdc.adcdemo.util.AuthToken;
-import pt.unl.fct.di.apdc.adcdemo.util.LoginData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.LoginData;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
