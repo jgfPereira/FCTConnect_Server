@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Profile Picture</title>
+</head>
+<body>
+<form action="javascript:void(0);" method="get" name="getPicture">
+    <div id="picture" style="float:right;"></div>
+    <div id="container">
+        <h1>Get Profile Picture</h1>
+        <div>File Name: <input id="fileName" name="fileName" type="text"/></div>
+        <br>
+        <input onclick="getProfilePicture(this)" type="submit" value="Get picture"/>
+    </div>
+    <br>
+</form>
+<script>
+    function getProfilePicture() {
+        let fileName = document.forms["getPicture"]["fileName"].value;
+        const pictureURL = "https://storage.googleapis.com/adc-demo-383221.appspot.com/" + fileName;
+        let htmlStr = '<img alt="Profile Picture" src="' + pictureURL + '"></img>';
+        loadProfilePicture("picture", htmlStr, pictureURL)
+    }
+
+    function loadProfilePicture(divID, htmlStr, pictureURL) {
+        const xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById(divID).innerHTML = htmlStr;
+            }
+        };
+        xhttp.open("GET", pictureURL);
+        xhttp.send(null);
+    }
+</script>
+</body>
+</html>
