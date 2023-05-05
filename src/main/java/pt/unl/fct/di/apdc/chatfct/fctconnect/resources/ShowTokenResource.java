@@ -1,9 +1,10 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import pt.unl.fct.di.apdc.adcdemo.util.AuthToken;
-import pt.unl.fct.di.apdc.adcdemo.util.RemoveData;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -16,34 +17,41 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/remove")
+@Path("/showtoken")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class RemoveResource {
+public class ShowTokenResource {
 
-    private static final Logger LOG = Logger.getLogger(RemoveResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(ShowTokenResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final Gson g = new Gson();
 
-    public RemoveResource() {
+    public ShowTokenResource() {
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRemove(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to remove other user");
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
+    public Response doShowToken(String usernameJSON, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        JsonObject jsonObj = new Gson().fromJson(usernameJSON, JsonObject.class);
+        String username = null;
+        if (jsonObj == null) {
+            LOG.fine("Invalid data");
             return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
+        } else {
+            JsonElement jsonElement = jsonObj.get("username");
+            if (jsonElement == null) {
+                LOG.fine("Invalid data");
+                return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
+            }
+            username = jsonElement.getAsString();
         }
-        Key removerUserKey = datastore.newKeyFactory().setKind("User").newKey(data.removerUsername);
-        Key removedUserKey = datastore.newKeyFactory().setKind("User").newKey(data.removedUsername);
+        Key userKey = datastore.newKeyFactory().setKind("User").newKey(username);
         String headerToken = AuthToken.getAuthHeader(request);
         if (headerToken == null) {
             LOG.fine("Wrong credentials/token - no auth header or invalid auth type");
             return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
         }
         Key loginAuthTokenKey = datastore.newKeyFactory()
-                .addAncestors(PathElement.of("User", data.removerUsername)).setKind("AuthToken").newKey(headerToken);
+                .addAncestors(PathElement.of("User", username)).setKind("AuthToken").newKey(headerToken);
         Transaction txn = datastore.newTransaction();
         try {
             Entity tokenOnDB = txn.get(loginAuthTokenKey);
@@ -60,24 +68,20 @@ public class RemoveResource {
                 }
                 LOG.fine("Valid token - proceeding");
             }
-            Entity removerOnDB = txn.get(removerUserKey);
-            Entity removedOnDB = txn.get(removedUserKey);
-            if (removerOnDB == null || removedOnDB == null) {
-                LOG.fine("At least one of the users dont exist");
+            Entity userOnDB = datastore.get(userKey);
+            if (userOnDB == null) {
+                LOG.fine("User dont exist");
                 txn.rollback();
-                return Response.status(Response.Status.NOT_FOUND).entity(g.toJson("Not Found - At least one of the users dont exist")).build();
+                return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Wrong credentials")).build();
             }
-            final String removerRole = removerOnDB.getString("role");
-            final String removedRole = removedOnDB.getString("role");
-            if (!data.validateRemovalPermissions(removerRole, removedRole)) {
-                LOG.fine("Dont have permission to remove users of role " + removerRole);
-                txn.rollback();
-                return Response.status(Response.Status.FORBIDDEN).entity(g.toJson("Forbidden - Dont have permission to remove users of role " + removerRole)).build();
-            }
-            txn.delete(removedUserKey);
-            LOG.fine("Remove done: " + data.removedUsername);
+            AuthToken resToken = new AuthToken(tokenOnDB.getString("username"),
+                    tokenOnDB.getString("tokenID"),
+                    tokenOnDB.getLong("creationDate"),
+                    tokenOnDB.getLong("expirationDate"),
+                    tokenOnDB.getBoolean("isRevoked"));
+            LOG.fine("Token info was sent to client");
             txn.commit();
-            return Response.ok(g.toJson("Remove done")).build();
+            return Response.ok(g.toJson(resToken)).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());

@@ -1,10 +1,10 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import pt.unl.fct.di.apdc.adcdemo.util.AuthToken;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -17,20 +17,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/showtoken")
+@Path("/logout")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class ShowTokenResource {
+public class LogoutResource {
 
-    private static final Logger LOG = Logger.getLogger(ShowTokenResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(LogoutResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final Gson g = new Gson();
 
-    public ShowTokenResource() {
+    public LogoutResource() {
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doShowToken(String usernameJSON, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doLogout(String usernameJSON, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         JsonObject jsonObj = new Gson().fromJson(usernameJSON, JsonObject.class);
         String username = null;
         if (jsonObj == null) {
@@ -74,14 +74,13 @@ public class ShowTokenResource {
                 txn.rollback();
                 return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Wrong credentials")).build();
             }
-            AuthToken resToken = new AuthToken(tokenOnDB.getString("username"),
-                    tokenOnDB.getString("tokenID"),
-                    tokenOnDB.getLong("creationDate"),
-                    tokenOnDB.getLong("expirationDate"),
-                    tokenOnDB.getBoolean("isRevoked"));
-            LOG.fine("Token info was sent to client");
+            Entity.Builder tokenChangedBuilder = Entity.newBuilder(tokenOnDB);
+            tokenChangedBuilder.set("isRevoked", true);
+            Entity tokenChanged = tokenChangedBuilder.build();
+            txn.put(tokenChanged);
             txn.commit();
-            return Response.ok(g.toJson(resToken)).build();
+            LOG.fine("Logout was successful - token revoked");
+            return Response.ok(g.toJson("Logout was successful")).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());

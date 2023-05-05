@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.util;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public class RolePermissions {
 
@@ -26,14 +26,10 @@ public class RolePermissions {
         if (data.isSameUser()) {
             if (updaterRole.equals(USER_ROLE)) {
                 return !(attributeName.equals("email") || attributeName.equals("name") || attributeName.equals("role") || attributeName.equals("state"));
-            } else if (updaterRole.equals(GBO_ROLE) || updaterRole.equals(GA_ROLE) || updaterRole.equals(GS_ROLE)) {
+            } else //unrecognized role
+                if (updaterRole.equals(GBO_ROLE) || updaterRole.equals(GA_ROLE) || updaterRole.equals(GS_ROLE)) {
                 return !(attributeName.equals("role") || attributeName.equals("state"));
-            } else if (updaterRole.equals(SU_ROLE)) {
-                return true;
-            } else {
-                //unrecognized role
-                return false;
-            }
+            } else return updaterRole.equals(SU_ROLE);
         }
         boolean roleBasicPerms = contains(updaterRole, updatedRole);
         if (!roleBasicPerms) {
@@ -43,18 +39,14 @@ public class RolePermissions {
             return !attributeName.equals("role");
         } else if (updaterRole.equals(GA_ROLE)) {
             return !attributeName.equals("role");
-        } else if (updaterRole.equals(GS_ROLE)) {
+        } else //unrecognized role
+            if (updaterRole.equals(GS_ROLE)) {
             if (attributeName.equals("role")) {
                 return updatedRole.equals(USER_ROLE) && attributeValue.equals(GBO_ROLE);
             } else {
                 return true;
             }
-        } else if (updaterRole.equals(SU_ROLE)) {
-            return true;
-        } else {
-            //unrecognized role
-            return false;
-        }
+        } else return updaterRole.equals(SU_ROLE);
     }
 
     private static boolean contains(String fatherRole, String childRole) {

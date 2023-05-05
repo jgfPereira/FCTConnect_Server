@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.resources;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
@@ -8,8 +8,8 @@ import org.apache.commons.io.FileUtils;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import pt.unl.fct.di.apdc.adcdemo.util.AddPhotoData;
-import pt.unl.fct.di.apdc.adcdemo.util.RegisterData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AddPhotoData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RegisterData;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -114,7 +114,7 @@ public class RegisterResource {
     @Path("/addphoto")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doAddPhoto(AddPhotoData data) throws IOException {
-        String urlBucket = "https://adc-demo-383221.oa.r.appspot.com/gcs/adc-demo-383221.appspot.com/"; // TODO change to new project
+        String urlBucket = "https://fctconnect.oa.r.appspot.com/gcs/fctconnect.appspot.com/";
         LOG.fine("Adding profile picture of user");
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one field is null");

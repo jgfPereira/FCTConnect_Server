@@ -1,4 +1,4 @@
-package pt.unl.fct.di.apdc.adcdemo.util;
+package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class AuthToken {
 
-    public static final long EXPIRATION_TIME = 300000; // 5min test //1000 * 60 * 60 * 2; // 2h
+    public static final long EXPIRATION_TIME = 300000; // 5 min test //1000 * 60 * 60 * 2; // 2h
     private static final String AUTH_TYPE = "Bearer";
     public String username;
     public String tokenID;
