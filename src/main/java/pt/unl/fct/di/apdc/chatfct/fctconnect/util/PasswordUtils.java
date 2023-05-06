@@ -1,5 +1,6 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.passay.*;
 
 import java.util.ArrayList;
@@ -21,6 +22,10 @@ public final class PasswordUtils {
     }
 
     private PasswordUtils() {
+    }
+
+    public static String hashPass(String pass) {
+        return DigestUtils.sha3_512Hex(pass);
     }
 
     public static boolean validatePassword(String password) {

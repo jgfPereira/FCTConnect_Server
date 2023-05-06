@@ -17,6 +17,8 @@ public final class RegexExp {
             + "|^(((19|2[0-9])[0-9]{2})-(0[469]|11)-(0[1-9]|[12][0-9]|30))$";
     public static final String VISIBILITY_REGEX = "PUBLIC|PRIVATE";
 
+    public static final String ROLE_REGEX = "STUDENT|PROFESSOR|EMPLOYEE";
+
     private RegexExp() {
     }
 }
