@@ -3,13 +3,11 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AddPhotoData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RegisterBasicData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -37,10 +35,6 @@ public class RegisterResource {
     public RegisterResource() {
     }
 
-    private String hashPass(String pass) {
-        return DigestUtils.sha3_512Hex(pass);
-    }
-
     private void setWithNulls(Entity.Builder eb, String name, String value) {
         if (value == null) {
             eb.setNull(name);
@@ -52,6 +46,25 @@ public class RegisterResource {
     private void setVisibility(Entity.Builder eb, String value) {
         final String val = value == null ? RegisterBasicData.DEFAULT_VISIBILITY : value;
         eb.set("visibility", val);
+    }
+
+    private void setAddress(Entity.Builder eb, Address address) {
+        if (address == null) {
+            eb.setNull("street");
+            eb.setNull("locale");
+            eb.setNull("zipCode");
+        } else {
+            setWithNulls(eb, "street", address.street);
+            setWithNulls(eb, "locale", address.locale);
+            setWithNulls(eb, "zipCode", address.zipCode);
+        }
+    }
+
+    @POST
+    @Path("/student")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doRegisterStudent(RegisterStudentData data) {
+        return null;
     }
 
     @POST
@@ -115,6 +128,9 @@ public class RegisterResource {
         } else if (!data.validateZipCode()) {
             LOG.fine("Zip code dont meet constraints");
             return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - zip code dont meet constraints")).build();
+        } else if (!data.validateRole()) {
+            LOG.fine("Unrecognized role");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - unrecognized role")).build();
         }
         return null;
     }
@@ -132,16 +148,14 @@ public class RegisterResource {
         Entity.Builder eb = Entity.newBuilder(userKey)
                 .set("email", data.email)
                 .set("name", data.name)
-                .set("password", hashPass(data.password))
+                .set("password", PasswordUtils.hashPass(data.password))
                 .set("creationDate", Timestamp.now())
-                .set("role", RegisterBasicData.DEFAULT_ROLE);
+                .set("role", data.role);
         setWithNulls(eb, "birthDate", data.birthDate);
         setWithNulls(eb, "phoneNum", data.phoneNum);
         setWithNulls(eb, "nif", data.nif);
         setVisibility(eb, data.visibility);
-        setWithNulls(eb, "street", data.street);
-        setWithNulls(eb, "locale", data.locale);
-        setWithNulls(eb, "zipCode", data.zipCode);
+        setAddress(eb, data.address);
         setWithNulls(eb, "photo", data.photo);
         return eb.build();
     }

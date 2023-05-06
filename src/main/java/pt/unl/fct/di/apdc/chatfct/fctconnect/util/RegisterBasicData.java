@@ -15,10 +15,9 @@ public class RegisterBasicData {
     public String phoneNum;
     public String nif;
     public String visibility;
-    public String street;
-    public String locale;
-    public String zipCode;
+    public Address address;
     public String photo;
+    public String role;
 
     public RegisterBasicData() {
     }
@@ -37,7 +36,7 @@ public class RegisterBasicData {
     }
 
     public boolean validateZipCode() {
-        return this.zipCode == null || this.zipCode.matches(RegexExp.ZIP_CODE_REGEX);
+        return this.address == null || this.address.validateZipCode();
     }
 
     public boolean validateNif() {
@@ -53,7 +52,21 @@ public class RegisterBasicData {
     }
 
     public boolean validateVisibility() {
-        return this.visibility == null || this.visibility.toUpperCase().trim().matches(RegexExp.VISIBILITY_REGEX);
+        if (this.visibility == null) {
+            return true;
+        } else {
+            this.visibility = this.visibility.toUpperCase().trim();
+            return this.visibility.matches(RegexExp.VISIBILITY_REGEX);
+        }
+    }
+
+    public boolean validateRole() {
+        if (this.role == null) {
+            return false;
+        } else {
+            this.role = this.role.toUpperCase().trim();
+            return this.role.matches(RegexExp.ROLE_REGEX);
+        }
     }
 
     //email validation based on RFC 822 standard
