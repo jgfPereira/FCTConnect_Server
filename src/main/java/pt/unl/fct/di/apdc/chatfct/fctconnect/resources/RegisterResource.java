@@ -26,11 +26,13 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class RegisterResource {
 
+    private static final String USER_TYPE = "User";
     private static final String STUDENT_TYPE = "Student";
     private static final String PROFESSOR_TYPE = "Professor";
     private static final String EMPLOYEE_TYPE = "Employee";
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
     private final KeyFactory studentKeyFactory = datastore.newKeyFactory().setKind(STUDENT_TYPE);
     private final KeyFactory professorKeyFactory = datastore.newKeyFactory().setKind(PROFESSOR_TYPE);
     private final KeyFactory employeeKeyFactory = datastore.newKeyFactory().setKind(EMPLOYEE_TYPE);
@@ -73,16 +75,19 @@ public class RegisterResource {
         if (checkData != null) {
             return checkData;
         }
-        Key key = studentKeyFactory.newKey(data.basicData.username);
+        Key key = userKeyFactory.newKey(data.basicData.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(key);
-            Response checkUserOnDB = checkUserOnDB(txn, userOnDB);
+            Response checkUserOnDB = checkUserOnDB(userOnDB);
             if (checkUserOnDB != null) {
+                txn.rollback();
                 return checkUserOnDB;
             }
-            Entity user = createStudent(data, key);
+            Entity user = createUser(data.basicData, key);
             txn.put(user);
+            Entity student = createStudent(data.basicData.username, data.studentNumber);
+            txn.put(student);
             txn.commit();
             LOG.fine("Register done: " + data.basicData.username);
             return Response.ok(gson.toJson("Register done")).build();
@@ -107,16 +112,19 @@ public class RegisterResource {
         if (checkData != null) {
             return checkData;
         }
-        Key key = getKeyOther(data.username, data.role);
+        Key key = userKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(key);
-            Response checkUserOnDB = checkUserOnDB(txn, userOnDB);
+            Response checkUserOnDB = checkUserOnDB(userOnDB);
             if (checkUserOnDB != null) {
+                txn.rollback();
                 return checkUserOnDB;
             }
-            Entity user = createOther(data, key);
+            Entity user = createUser(data, key);
             txn.put(user);
+            Entity other = createOther(data.username, data.role);
+            txn.put(other);
             txn.commit();
             LOG.fine("Register done: " + data.username);
             return Response.ok(gson.toJson("Register done")).build();
@@ -129,14 +137,6 @@ public class RegisterResource {
                 txn.rollback();
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
-        }
-    }
-
-    private Key getKeyOther(String username, String role) {
-        if (role.equals(RolePermissions.PROFESSOR_ROLE)) {
-            return this.professorKeyFactory.newKey(username);
-        } else {
-            return this.employeeKeyFactory.newKey(username);
         }
     }
 
@@ -206,26 +206,28 @@ public class RegisterResource {
         return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid role")).build();
     }
 
-    private Response checkUserOnDB(Transaction txn, Entity userOnDB) {
+    private Response checkUserOnDB(Entity userOnDB) {
         if (userOnDB != null) {
-            txn.rollback();
             LOG.fine("User already exists");
             return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - username is already taken")).build();
         }
         return null;
     }
 
-    private Entity createOther(RegisterBasicData data, Key key) {
-        return setBasicData(data, key).build();
+    private Entity createOther(String username, String role) {
+        final String otherKind = role.equals(RolePermissions.PROFESSOR_ROLE) ? PROFESSOR_TYPE : EMPLOYEE_TYPE;
+        final Key key = datastore.newKeyFactory().setKind(otherKind).addAncestors(PathElement.of(USER_TYPE, username)).newKey(username);
+        return Entity.newBuilder(key).build();
     }
 
-    private Entity createStudent(RegisterStudentData data, Key key) {
-        Entity.Builder eb = setBasicData(data.basicData, key);
-        eb.set("studentNumber", data.studentNumber);
+    private Entity createStudent(String username, String studentNumber) {
+        final Key key = datastore.newKeyFactory().setKind(STUDENT_TYPE).addAncestors(PathElement.of(USER_TYPE, username)).newKey(username);
+        Entity.Builder eb = Entity.newBuilder(key)
+                .set("studentNumber", studentNumber);
         return eb.build();
     }
 
-    private Entity.Builder setBasicData(RegisterBasicData data, Key key) {
+    private Entity createUser(RegisterBasicData data, Key key) {
         Entity.Builder eb = Entity.newBuilder(key)
                 .set("email", data.email)
                 .set("name", data.name)
@@ -238,7 +240,7 @@ public class RegisterResource {
         setVisibility(eb, data.visibility);
         setAddress(eb, data.address);
         setWithNulls(eb, "photo", data.photo);
-        return eb;
+        return eb.build();
     }
 
     @POST
