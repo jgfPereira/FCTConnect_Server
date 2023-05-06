@@ -9,7 +9,7 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AddPhotoData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RegisterData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RegisterBasicData;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -49,7 +49,7 @@ public class RegisterResource {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRegister(RegisterData data) {
+    public Response doRegister(RegisterBasicData data) {
         LOG.fine("User attempt to register");
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one field is null");
@@ -81,8 +81,8 @@ public class RegisterResource {
                     .set("email", data.email)
                     .set("name", data.name)
                     .set("creationDate", Timestamp.now())
-                    .set("role", RegisterData.DEFAULT_ROLE)
-                    .set("state", RegisterData.DEFAULT_STATE);
+                    .set("role", RegisterBasicData.DEFAULT_ROLE)
+                    .set("state", RegisterBasicData.DEFAULT_STATE);
             setWithNulls(eb, "photo", data.photo);
             setWithNulls(eb, "visibility", data.visibility);
             setWithNulls(eb, "homePhoneNum", data.homePhoneNum);
