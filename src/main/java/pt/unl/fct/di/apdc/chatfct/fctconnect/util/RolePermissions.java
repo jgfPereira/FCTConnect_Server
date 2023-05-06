@@ -2,6 +2,9 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public class RolePermissions {
 
+    public static final String STUDENT_ROLE = "STUDENT";
+    public static final String PROFESSOR_ROLE = "PROFESSOR";
+    public static final String EMPLOYEE_ROLE = "EMPLOYEE";
     public static final String USER_ROLE = "USER";
     public static final String GBO_ROLE = "GBO";
     public static final String GA_ROLE = "GA";
@@ -28,8 +31,8 @@ public class RolePermissions {
                 return !(attributeName.equals("email") || attributeName.equals("name") || attributeName.equals("role") || attributeName.equals("state"));
             } else //unrecognized role
                 if (updaterRole.equals(GBO_ROLE) || updaterRole.equals(GA_ROLE) || updaterRole.equals(GS_ROLE)) {
-                return !(attributeName.equals("role") || attributeName.equals("state"));
-            } else return updaterRole.equals(SU_ROLE);
+                    return !(attributeName.equals("role") || attributeName.equals("state"));
+                } else return updaterRole.equals(SU_ROLE);
         }
         boolean roleBasicPerms = contains(updaterRole, updatedRole);
         if (!roleBasicPerms) {
@@ -41,12 +44,12 @@ public class RolePermissions {
             return !attributeName.equals("role");
         } else //unrecognized role
             if (updaterRole.equals(GS_ROLE)) {
-            if (attributeName.equals("role")) {
-                return updatedRole.equals(USER_ROLE) && attributeValue.equals(GBO_ROLE);
-            } else {
-                return true;
-            }
-        } else return updaterRole.equals(SU_ROLE);
+                if (attributeName.equals("role")) {
+                    return updatedRole.equals(USER_ROLE) && attributeValue.equals(GBO_ROLE);
+                } else {
+                    return true;
+                }
+            } else return updaterRole.equals(SU_ROLE);
     }
 
     private static boolean contains(String fatherRole, String childRole) {
