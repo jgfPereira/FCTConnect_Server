@@ -28,8 +28,10 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class RegisterResource {
 
+    private static final String USER_TYPE = "User";
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
     private final Gson g = new Gson();
 
     public RegisterResource() {
@@ -47,56 +49,31 @@ public class RegisterResource {
         }
     }
 
+    private void setVisibility(Entity.Builder eb, String value) {
+        final String val = value == null ? RegisterBasicData.DEFAULT_VISIBILITY : value;
+        eb.set("visibility", val);
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doRegister(RegisterBasicData data) {
         LOG.fine("User attempt to register");
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
-        } else if (!data.validateEmail()) {
-            LOG.fine("Email dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Email dont meet constraints")).build();
-        } else if (!data.validatePasswords()) {
-            LOG.fine("Passwords dont match");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Passwords dont match")).build();
-        } else if (!data.validatePasswordConstraints()) {
-            LOG.fine("Passwords dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - password dont meet constraints")).build();
-        } else if (!data.validateZipCode()) {
-            LOG.fine("Zip code dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Zip code dont meet constraints")).build();
+        Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
         }
-        Key userKey = datastore.newKeyFactory().setKind("User").newKey(data.username);
+        Key userKey = userKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(userKey);
-            if (userOnDB != null) {
-                LOG.fine("User already exists");
-                txn.rollback();
-                return Response.status(Response.Status.CONFLICT).entity(g.toJson("Conflict - username is already taken")).build();
+            Response checkUserOnDB = checkUserOnDB(txn, userOnDB);
+            if (checkUserOnDB != null) {
+                return checkUserOnDB;
             }
-            Entity.Builder eb = Entity.newBuilder(userKey)
-                    .set("password", hashPass(data.password))
-                    .set("email", data.email)
-                    .set("name", data.name)
-                    .set("creationDate", Timestamp.now())
-                    .set("role", RegisterBasicData.DEFAULT_ROLE)
-                    .set("state", RegisterBasicData.DEFAULT_STATE);
-            setWithNulls(eb, "photo", data.photo);
-            setWithNulls(eb, "visibility", data.visibility);
-            setWithNulls(eb, "homePhoneNum", data.homePhoneNum);
-            setWithNulls(eb, "phoneNum", data.phoneNum);
-            setWithNulls(eb, "occupation", data.occupation);
-            setWithNulls(eb, "placeOfWork", data.placeOfWork);
-            setWithNulls(eb, "nif", data.nif);
-            setWithNulls(eb, "street", data.street);
-            setWithNulls(eb, "locale", data.locale);
-            setWithNulls(eb, "zipCode", data.zipCode);
-            Entity user = eb.build();
+            Entity user = createUser(data, userKey);
             txn.put(user);
-            LOG.fine("Register done: " + data.username);
             txn.commit();
+            LOG.fine("Register done: " + data.username);
             return Response.ok(g.toJson("Register done")).build();
         } catch (Exception e) {
             txn.rollback();
@@ -108,6 +85,65 @@ public class RegisterResource {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(g.toJson("Server Error")).build();
             }
         }
+    }
+
+    private Response checkData(RegisterBasicData data) {
+        if (data == null || !data.validateData()) {
+            LOG.fine("Invalid data: at least one field is null");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - invalid data")).build();
+        } else if (!data.validateEmail()) {
+            LOG.fine("Email dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - email dont meet constraints")).build();
+        } else if (!data.comparePasswords()) {
+            LOG.fine("Passwords dont match");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - passwords dont match")).build();
+        } else if (!data.validatePassword()) {
+            LOG.fine("Passwords dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - password dont meet constraints")).build();
+        } else if (!data.validateBirthDate()) {
+            LOG.fine("Birth date dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - birth date dont meet constraints")).build();
+        } else if (!data.validatePhoneNum()) {
+            LOG.fine("Phone number dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - phone number dont meet constraints")).build();
+        } else if (!data.validateNif()) {
+            LOG.fine("NIF dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - NIF dont meet constraints")).build();
+        } else if (!data.validateVisibility()) {
+            LOG.fine("Visibility dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - visibility dont meet constraints")).build();
+        } else if (!data.validateZipCode()) {
+            LOG.fine("Zip code dont meet constraints");
+            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - zip code dont meet constraints")).build();
+        }
+        return null;
+    }
+
+    private Response checkUserOnDB(Transaction txn, Entity userOnDB) {
+        if (userOnDB != null) {
+            txn.rollback();
+            LOG.fine("User already exists");
+            return Response.status(Response.Status.CONFLICT).entity(g.toJson("Conflict - username is already taken")).build();
+        }
+        return null;
+    }
+
+    private Entity createUser(RegisterBasicData data, Key userKey) {
+        Entity.Builder eb = Entity.newBuilder(userKey)
+                .set("email", data.email)
+                .set("name", data.name)
+                .set("password", hashPass(data.password))
+                .set("creationDate", Timestamp.now())
+                .set("role", RegisterBasicData.DEFAULT_ROLE);
+        setWithNulls(eb, "birthDate", data.birthDate);
+        setWithNulls(eb, "phoneNum", data.phoneNum);
+        setWithNulls(eb, "nif", data.nif);
+        setVisibility(eb, data.visibility);
+        setWithNulls(eb, "street", data.street);
+        setWithNulls(eb, "locale", data.locale);
+        setWithNulls(eb, "zipCode", data.zipCode);
+        setWithNulls(eb, "photo", data.photo);
+        return eb.build();
     }
 
     @POST

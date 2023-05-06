@@ -5,6 +5,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 public class RegisterBasicData {
 
     public static final String DEFAULT_ROLE = "UNASSIGNED";
+    public static final String DEFAULT_VISIBILITY = "PRIVATE";
     public String username;
     public String email;
     public String name;
@@ -27,11 +28,11 @@ public class RegisterBasicData {
                 || this.name == null);
     }
 
-    public boolean validatePasswordConstraints() {
+    public boolean validatePassword() {
         return PasswordUtils.validatePassword(this.password);
     }
 
-    public boolean validatePasswords() {
+    public boolean comparePasswords() {
         return PasswordUtils.comparePasswords(this.password, this.passConf);
     }
 
@@ -44,7 +45,15 @@ public class RegisterBasicData {
     }
 
     public boolean validatePhoneNum() {
-        return this.phoneNum == null || this.phoneNum.matches("");
+        return this.phoneNum == null || this.phoneNum.matches(RegexExp.PHONE_NUM_REGEX);
+    }
+
+    public boolean validateBirthDate() {
+        return this.birthDate == null || this.birthDate.matches(RegexExp.DATE_REGEX);
+    }
+
+    public boolean validateVisibility() {
+        return this.visibility == null || this.visibility.toUpperCase().trim().matches(RegexExp.VISIBILITY_REGEX);
     }
 
     //email validation based on RFC 822 standard
