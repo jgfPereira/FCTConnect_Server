@@ -33,9 +33,6 @@ public class RegisterResource {
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
-    private final KeyFactory studentKeyFactory = datastore.newKeyFactory().setKind(STUDENT_TYPE);
-    private final KeyFactory professorKeyFactory = datastore.newKeyFactory().setKind(PROFESSOR_TYPE);
-    private final KeyFactory employeeKeyFactory = datastore.newKeyFactory().setKind(EMPLOYEE_TYPE);
     private final Gson gson = new Gson();
 
     public RegisterResource() {
@@ -149,6 +146,10 @@ public class RegisterResource {
     }
 
     private Response checkDataStudent(RegisterStudentData data) {
+        if (data == null) {
+            LOG.fine("Invalid data: at least one required field is null");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+        }
         Response checkBasicData = checkBasicData(data.basicData);
         if (checkBasicData != null) {
             return checkBasicData;
