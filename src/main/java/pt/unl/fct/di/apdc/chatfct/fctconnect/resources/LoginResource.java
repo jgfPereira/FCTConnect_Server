@@ -8,9 +8,9 @@ import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.apache.commons.codec.digest.DigestUtils;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.LoginData;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -32,98 +32,134 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class LoginResource {
 
+    private static final String USER_TYPE = "User";
     private static final Logger LOG = Logger.getLogger(LoginResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final Gson g = new Gson();
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
+    private final Gson gson = new Gson();
 
     public LoginResource() {
-    }
-
-    private String hashPass(String pass) {
-        return DigestUtils.sha3_512Hex(pass);
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doLogin(LoginData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Login attempt by user " + data.username);
-        Key userKey = datastore.newKeyFactory().setKind("User").newKey(data.username);
-        Key loginRegistryKey = datastore.newKeyFactory().addAncestors(PathElement.of("User", data.username))
-                .setKind("LoginRegistry").newKey("loginReg");
-        Key loginLogKey = datastore.allocateId(datastore.newKeyFactory()
-                .addAncestors(PathElement.of("User", data.username)).setKind("LoginLog").newKey());
+        Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key userKey = userKeyFactory.newKey(data.username);
+        Key loginRegistryKey = createLoginRegistryKey(data.username);
+        Key loginLogKey = createLoginLogKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(userKey);
-            if (userOnDB != null) {
-                Entity loginRegistry = txn.get(loginRegistryKey);
-                if (loginRegistry == null) {
-                    // creating for the first time
-                    loginRegistry = Entity.newBuilder(loginRegistryKey)
-                            .set("success_logins", 0L)
-                            .set("fail_logins", 0L)
-                            .set("first_login", Timestamp.now())
-                            .set("last_login", Timestamp.now())
-                            .setNull("last_attempt")
-                            .build();
-                }
-                final String givenPasswordHash = hashPass(data.password);
-                if (userOnDB.getString("password").equals(givenPasswordHash)) {
-                    AuthToken tokenAuth = new AuthToken(data.username);
-                    Entity loginLog = Entity.newBuilder(loginLogKey)
-                            .set("login_ip", request.getRemoteAddr())
-                            .set("login_host", request.getRemoteHost())
-                            .set("login_country", headers.getHeaderString("X-AppEngine-Country"))
-                            .set("login_city", headers.getHeaderString("X-AppEngine-City"))
-                            .set("login_time", Timestamp.now())
-                            .set("login_coords",
-                                    StringValue.newBuilder(headers.getHeaderString("X-AppEngine-CityLatLong"))
-                                            .setExcludeFromIndexes(true).build())
-                            .build();
-                    Key loginAuthTokenKey = datastore.newKeyFactory()
-                            .addAncestors(PathElement.of("User", data.username)).setKind("AuthToken").newKey(tokenAuth.tokenID);
-                    Entity loginAuthToken = Entity.newBuilder(loginAuthTokenKey)
-                            .set("tokenID", tokenAuth.tokenID)
-                            .set("username", tokenAuth.username)
-                            .set("creationDate", tokenAuth.creationDate)
-                            .set("expirationDate", tokenAuth.expirationDate)
-                            .set("isRevoked", tokenAuth.isRevoked)
-                            .build();
-                    Entity.Builder loginRegistryBuilder = Entity.newBuilder(loginRegistry);
-                    loginRegistryBuilder
-                            .set("success_logins", 1 + loginRegistry.getLong("success_logins"))
-                            .set("last_login", Timestamp.now());
-                    Entity loginRegistryNew = loginRegistryBuilder.build();
-                    LOG.fine("Password is correct - Generated token and logs");
-                    txn.put(loginLog, loginRegistryNew, loginAuthToken);
-                    txn.commit();
-                    return Response.ok(g.toJson(tokenAuth.tokenID)).build();
-                } else {
-                    Entity.Builder loginRegistryBuilder = Entity.newBuilder(loginRegistry);
-                    loginRegistryBuilder
-                            .set("fail_logins", 1 + loginRegistry.getLong("fail_logins"))
-                            .set("last_attempt", Timestamp.now());
-                    Entity loginRegistryNew = loginRegistryBuilder.build();
-                    LOG.fine("Wrong password");
-                    txn.put(loginRegistryNew);
-                    txn.commit();
-                    return Response.status(Status.UNAUTHORIZED).entity(g.toJson("Wrong credentials")).build();
-                }
-            } else {
-                LOG.fine("User does not exist");
+            Response checkUserOnDB = checkUserOnDB(userOnDB);
+            if (checkUserOnDB != null) {
                 txn.rollback();
-                return Response.status(Status.UNAUTHORIZED).entity(g.toJson("Wrong credentials")).build();
+                return checkUserOnDB;
+            }
+            Entity loginRegistry = txn.get(loginRegistryKey);
+            loginRegistry = createLoginRegistryIfMissing(loginRegistry, loginRegistryKey);
+            final boolean checkPassword = checkPassword(data.password, userOnDB);
+            if (checkPassword) {
+                Entity loginLog = createLoginLog(loginLogKey, headers, request);
+                loginRegistry = updateLoginRegistryOnLoginSuccess(loginRegistry);
+                txn.update(loginRegistry);
+                txn.put(loginLog);
+                txn.commit();
+                LOG.fine("Correct password - generated token and logs");
+                return Response.ok(gson.toJson(tokenAuth.tokenID)).build();
+            } else {
+                loginRegistry = updateLoginRegistryOnLoginFail(loginRegistry);
+                txn.update(loginRegistry);
+                txn.commit();
+                LOG.fine("Wrong password - updated logs");
+                return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
             }
         } catch (Exception e) {
             txn.rollback();
-            LOG.fine(e.getLocalizedMessage());
-            return Response.status(Status.INTERNAL_SERVER_ERROR).entity(g.toJson("Server Error")).build();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
         } finally {
             if (txn.isActive()) {
                 txn.rollback();
-                return Response.status(Status.INTERNAL_SERVER_ERROR).entity(g.toJson("Server Error")).build();
+                return Response.status(Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
         }
+    }
+
+    private Response checkData(LoginData data) {
+        final boolean check = data != null && data.validateData();
+        if (!check) {
+            LOG.fine("Invalid data: at least one required field is null");
+        }
+        return check ? null : Response.status(Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+    }
+
+    private Key createLoginRegistryKey(String username) {
+        return datastore.newKeyFactory().setKind("LoginRegistry").addAncestors(PathElement.of(USER_TYPE, username))
+                .newKey("loginReg");
+    }
+
+    private Key createLoginLogKey(String username) {
+        return datastore.allocateId(datastore.newKeyFactory().setKind("LoginLog")
+                .addAncestors(PathElement.of(USER_TYPE, username)).newKey());
+    }
+
+    private boolean checkLoginRegistryOnDB(Entity e) {
+        return e != null;
+    }
+
+    private Response checkUserOnDB(Entity userOnDB) {
+        if (userOnDB == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Status.NOT_FOUND).entity(gson.toJson("Not Found - username is not recognized")).build();
+        }
+        return null;
+    }
+
+    private Entity createLoginRegistryIfMissing(Entity e, Key key) {
+        final boolean checkLoginRegistryOnDB = checkLoginRegistryOnDB(e);
+        if (!checkLoginRegistryOnDB) {
+            return Entity.newBuilder(key)
+                    .set("success_logins", 0L)
+                    .set("fail_logins", 0L)
+                    .set("first_login", Timestamp.now())
+                    .set("last_login", Timestamp.now())
+                    .setNull("last_attempt")
+                    .build();
+        }
+        return e;
+    }
+
+    private boolean checkPassword(String password, Entity userOnDB) {
+        return userOnDB.getString("password").equals(PasswordUtils.hashPass(password));
+    }
+
+    private Entity createLoginLog(Key key, HttpHeaders headers, HttpServletRequest request) {
+        return Entity.newBuilder(key)
+                .set("login_ip", request.getRemoteAddr())
+                .set("login_host", request.getRemoteHost())
+                .set("login_country", headers.getHeaderString("X-AppEngine-Country"))
+                .set("login_city", headers.getHeaderString("X-AppEngine-City"))
+                .set("login_time", Timestamp.now())
+                .set("login_coords", StringValue.newBuilder(headers.getHeaderString("X-AppEngine-CityLatLong"))
+                        .setExcludeFromIndexes(true).build())
+                .build();
+    }
+
+    private Entity updateLoginRegistryOnLoginSuccess(Entity e) {
+        return Entity.newBuilder(e)
+                .set("success_logins", 1 + e.getLong("success_logins"))
+                .set("last_login", Timestamp.now()).build();
+    }
+
+    private Entity updateLoginRegistryOnLoginFail(Entity e) {
+        return Entity.newBuilder(e)
+                .set("fail_logins", 1 + e.getLong("fail_logins"))
+                .set("last_attempt", Timestamp.now()).build();
     }
 
     @POST
@@ -134,12 +170,12 @@ public class LoginResource {
         String username = null;
         if (jsonObj == null) {
             LOG.fine("Invalid data");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
         } else {
             JsonElement jsonElement = jsonObj.get("username");
             if (jsonElement == null) {
                 LOG.fine("Invalid data");
-                return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
+                return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
             }
             username = jsonElement.getAsString();
         }
@@ -147,26 +183,26 @@ public class LoginResource {
         String headerToken = AuthToken.getAuthHeader(request);
         if (headerToken == null) {
             LOG.fine("Wrong credentials/token - no auth header or invalid auth type");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         }
         Key loginAuthTokenKey = datastore.newKeyFactory()
                 .addAncestors(PathElement.of("User", username)).setKind("AuthToken").newKey(headerToken);
         Entity tokenOnDB = datastore.get(loginAuthTokenKey);
         if (tokenOnDB == null) {
             LOG.fine("Wrong credentials/token - not found");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         } else {
             boolean isTokenValid = AuthToken.isValid(tokenOnDB.getLong("expirationDate"), tokenOnDB.getBoolean("isRevoked"));
             if (!isTokenValid) {
                 LOG.fine("Expired token");
-                return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
+                return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
             }
             LOG.fine("Valid token - proceeding");
         }
         Entity userOnDB = datastore.get(userKey);
         if (userOnDB == null) {
             LOG.fine("User dont exist");
-            return Response.status(Status.UNAUTHORIZED).entity(g.toJson("Wrong credentials")).build();
+            return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
         }
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, -1);
@@ -184,6 +220,6 @@ public class LoginResource {
         logs.forEachRemaining(userLog -> {
             loginTimes.add(userLog.getTimestamp("login_time").toDate());
         });
-        return Response.ok(g.toJson(loginTimes)).build();
+        return Response.ok(gson.toJson(loginTimes)).build();
     }
 }
