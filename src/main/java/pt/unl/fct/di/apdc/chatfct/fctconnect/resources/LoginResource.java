@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.LoginData;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -69,8 +70,9 @@ public class LoginResource {
                 txn.update(loginRegistry);
                 txn.put(loginLog);
                 txn.commit();
+                final String token = createToken(data.username, userOnDB);
                 LOG.fine("Correct password - generated token and logs");
-                return Response.ok(gson.toJson(tokenAuth.tokenID)).build();
+                return Response.ok(gson.toJson(token)).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
             } else {
                 loginRegistry = updateLoginRegistryOnLoginFail(loginRegistry);
                 txn.update(loginRegistry);
@@ -160,6 +162,11 @@ public class LoginResource {
         return Entity.newBuilder(e)
                 .set("fail_logins", 1 + e.getLong("fail_logins"))
                 .set("last_attempt", Timestamp.now()).build();
+    }
+
+    private String createToken(String username, Entity userOnDB) {
+        final String role = userOnDB.getString("role");
+        return TokenUtils.createToken(username, role);
     }
 
     @POST
