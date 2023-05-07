@@ -62,7 +62,11 @@ public class LoginResource {
                 return checkUserOnDB;
             }
             Entity loginRegistry = txn.get(loginRegistryKey);
+            final boolean checkLoginRegistry = checkLoginRegistryOnDB(loginRegistry);
             loginRegistry = createLoginRegistryIfMissing(loginRegistry, loginRegistryKey);
+            if (!checkLoginRegistry) {
+                txn.put(loginRegistry);
+            }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
                 Entity loginLog = createLoginLog(loginLogKey, headers, request);
