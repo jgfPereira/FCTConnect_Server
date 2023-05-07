@@ -9,7 +9,7 @@ import java.util.Date;
 
 public final class TokenUtils {
 
-    public static final String AUTH_HEADER = "Authorization";
+    public static final String AUTH_HEADER = "X-Auth-Token";
     public static final String AUTH_TYPE = "Bearer ";
     private static final int EXPIRATION_WINDOW = 7200000; // 2 hours
 
