@@ -69,8 +69,9 @@ public class LoginResource {
             }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
-                Entity loginLog = createLoginLog(loginLogKey, headers, request);
-                loginRegistry = updateLoginRegistryOnLoginSuccess(loginRegistry);
+                Timestamp time = Timestamp.now();
+                Entity loginLog = createLoginLog(loginLogKey, headers, request, time);
+                loginRegistry = updateLoginRegistryOnLoginSuccess(loginRegistry, time);
                 txn.update(loginRegistry);
                 txn.put(loginLog);
                 txn.commit();
@@ -132,8 +133,8 @@ public class LoginResource {
             return Entity.newBuilder(key)
                     .set("success_logins", 0L)
                     .set("fail_logins", 0L)
-                    .set("first_login", Timestamp.now())
-                    .set("last_login", Timestamp.now())
+                    .setNull("first_login")
+                    .setNull("last_login")
                     .setNull("last_attempt")
                     .build();
         }
@@ -144,22 +145,25 @@ public class LoginResource {
         return userOnDB.getString("password").equals(PasswordUtils.hashPass(password));
     }
 
-    private Entity createLoginLog(Key key, HttpHeaders headers, HttpServletRequest request) {
+    private Entity createLoginLog(Key key, HttpHeaders headers, HttpServletRequest request, Timestamp time) {
         return Entity.newBuilder(key)
                 .set("login_ip", request.getRemoteAddr())
                 .set("login_host", request.getRemoteHost())
                 .set("login_country", headers.getHeaderString("X-AppEngine-Country"))
                 .set("login_city", headers.getHeaderString("X-AppEngine-City"))
-                .set("login_time", Timestamp.now())
+                .set("login_time", time)
                 .set("login_coords", StringValue.newBuilder(headers.getHeaderString("X-AppEngine-CityLatLong"))
                         .setExcludeFromIndexes(true).build())
                 .build();
     }
 
-    private Entity updateLoginRegistryOnLoginSuccess(Entity e) {
-        return Entity.newBuilder(e)
-                .set("success_logins", 1 + e.getLong("success_logins"))
-                .set("last_login", Timestamp.now()).build();
+    private Entity updateLoginRegistryOnLoginSuccess(Entity e, Timestamp time) {
+        Entity.Builder eb = Entity.newBuilder(e);
+        if (e.isNull("first_login")) {
+            eb.set("first_login", time);
+        }
+        return eb.set("success_logins", 1 + e.getLong("success_logins"))
+                .set("last_login", time).build();
     }
 
     private Entity updateLoginRegistryOnLoginFail(Entity e) {
