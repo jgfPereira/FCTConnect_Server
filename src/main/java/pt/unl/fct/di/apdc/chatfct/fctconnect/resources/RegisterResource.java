@@ -26,104 +26,39 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class RegisterResource {
 
-    private static final String USER_TYPE = "User";
-    private static final String STUDENT_TYPE = "Student";
-    private static final String PROFESSOR_TYPE = "Professor";
-    private static final String EMPLOYEE_TYPE = "Employee";
+    private static final String EMAIL_DELIMITER = "@";
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
 
     public RegisterResource() {
     }
 
-    private void setWithNulls(Entity.Builder eb, String name, String value) {
-        if (value == null) {
-            eb.setNull(name);
-        } else {
-            eb.set(name, value);
-        }
-    }
-
-    private void setVisibility(Entity.Builder eb, String value) {
-        final String val = value == null ? RegisterBasicData.DEFAULT_VISIBILITY : value;
-        eb.set("visibility", val);
-    }
-
-    private void setAddress(Entity.Builder eb, Address address) {
-        if (address == null) {
-            eb.setNull("street");
-            eb.setNull("locale");
-            eb.setNull("zipCode");
-        } else {
-            setWithNulls(eb, "street", address.street);
-            setWithNulls(eb, "locale", address.locale);
-            setWithNulls(eb, "zipCode", address.zipCode);
-        }
-    }
-
     @POST
-    @Path("/student")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRegisterStudent(RegisterStudentData data) {
+    public Response doRegister(RegisterMandatoryData data) {
         LOG.fine("User attempt to register");
-        Response checkData = checkDataStudent(data);
-        if (checkData != null) {
-            return checkData;
+        final Response checkMandatoryData = checkMandatoryData(data);
+        if (checkMandatoryData != null) {
+            return checkMandatoryData;
         }
-        Key key = userKeyFactory.newKey(data.basicData.username);
+        final String username = extractUsername(data.email);
+        Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(key);
-            Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
-            }
-            Entity user = createUser(data.basicData, key);
-            txn.put(user);
-            Entity student = createStudent(data.basicData.username, data.studentNumber);
-            txn.put(student);
-            txn.commit();
-            LOG.fine("Register done: " + data.basicData.username);
-            return Response.ok(gson.toJson("Register done")).build();
-        } catch (Exception e) {
-            txn.rollback();
-            LOG.severe(e.getLocalizedMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
-        } finally {
-            if (txn.isActive()) {
-                txn.rollback();
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
-            }
-        }
-    }
-
-    @POST
-    @Path("/other")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRegisterOther(RegisterBasicData data) {
-        LOG.fine("User attempt to register");
-        Response checkData = checkDataOther(data);
-        if (checkData != null) {
-            return checkData;
-        }
-        Key key = userKeyFactory.newKey(data.username);
-        Transaction txn = datastore.newTransaction();
-        try {
-            Entity userOnDB = txn.get(key);
-            Response checkUserOnDB = checkUserOnDB(userOnDB);
+            final Response checkUserOnDB = checkUserOnDB(userOnDB);
             if (checkUserOnDB != null) {
                 txn.rollback();
                 return checkUserOnDB;
             }
             Entity user = createUser(data, key);
             txn.put(user);
-            Entity other = createOther(data.username, data.role);
-            txn.put(other);
+            Entity specificUser = createSpecificUser(username, data.role);
+            txn.put(specificUser);
             txn.commit();
-            LOG.fine("Register done: " + data.username);
+            LOG.fine("Register done: " + username);
             return Response.ok(gson.toJson("Register done")).build();
         } catch (Exception e) {
             txn.rollback();
@@ -137,34 +72,7 @@ public class RegisterResource {
         }
     }
 
-    private Response checkDataOther(RegisterBasicData data) {
-        Response checkBasicData = checkBasicData(data);
-        if (checkBasicData != null) {
-            return checkBasicData;
-        }
-        return checkRole(data.role, RegexExp.ROLE_OTHER_REGEX);
-    }
-
-    private Response checkDataStudent(RegisterStudentData data) {
-        if (data == null) {
-            LOG.fine("Invalid data: at least one required field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
-        }
-        Response checkBasicData = checkBasicData(data.basicData);
-        if (checkBasicData != null) {
-            return checkBasicData;
-        }
-        Response checkRole = checkRole(data.basicData.role, RegexExp.ROLE_STUDENT_REGEX);
-        if (checkRole != null) {
-            return checkRole;
-        } else if (!data.validateStudentNumber()) {
-            LOG.fine("Student number dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - student number dont meet constraints")).build();
-        }
-        return null;
-    }
-
-    private Response checkBasicData(RegisterBasicData data) {
+    private Response checkMandatoryData(RegisterMandatoryData data) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one required field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
@@ -177,21 +85,6 @@ public class RegisterResource {
         } else if (!data.validatePassword()) {
             LOG.fine("Passwords dont meet constraints");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - password dont meet constraints")).build();
-        } else if (!data.validateBirthDate()) {
-            LOG.fine("Birth date dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - birth date dont meet constraints")).build();
-        } else if (!data.validatePhoneNum()) {
-            LOG.fine("Phone number dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - phone number dont meet constraints")).build();
-        } else if (!data.validateNif()) {
-            LOG.fine("NIF dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - NIF dont meet constraints")).build();
-        } else if (!data.validateVisibility()) {
-            LOG.fine("Visibility dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - visibility dont meet constraints")).build();
-        } else if (!data.validateZipCode()) {
-            LOG.fine("Zip code dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - zip code dont meet constraints")).build();
         } else if (!data.validateRole()) {
             LOG.fine("Unrecognized role");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized role")).build();
@@ -199,12 +92,9 @@ public class RegisterResource {
         return null;
     }
 
-    private Response checkRole(String role, String regex) {
-        final boolean check = role.matches(regex);
-        if (!check) {
-            LOG.fine("Invalid role");
-        }
-        return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid role")).build();
+    private String extractUsername(String email) {
+        final String[] split = email.split(EMAIL_DELIMITER);
+        return split[0].trim();
     }
 
     private Response checkUserOnDB(Entity userOnDB) {
@@ -215,32 +105,30 @@ public class RegisterResource {
         return null;
     }
 
-    private Entity createOther(String username, String role) {
-        final String otherKind = role.equals(RolePermissions.PROFESSOR_ROLE) ? PROFESSOR_TYPE : EMPLOYEE_TYPE;
-        final Key key = datastore.newKeyFactory().setKind(otherKind).addAncestors(PathElement.of(USER_TYPE, username)).newKey(username);
-        return Entity.newBuilder(key).build();
-    }
-
-    private Entity createStudent(String username, String studentNumber) {
-        final Key key = datastore.newKeyFactory().setKind(STUDENT_TYPE).addAncestors(PathElement.of(USER_TYPE, username)).newKey(username);
-        Entity.Builder eb = Entity.newBuilder(key)
-                .set("studentNumber", studentNumber);
+    private Entity createSpecificUser(String username, String role) {
+        final Key key = datastore.newKeyFactory().setKind(role).addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+        final Entity.Builder eb = Entity.newBuilder(key);
+        if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
+            eb.setNull(DatastoreTypes.STUDENT_NUM_ATTR);
+        }
         return eb.build();
     }
 
-    private Entity createUser(RegisterBasicData data, Key key) {
+    private Entity createUser(RegisterMandatoryData data, Key key) {
         Entity.Builder eb = Entity.newBuilder(key)
-                .set("email", data.email)
-                .set("name", data.name)
-                .set("password", PasswordUtils.hashPass(data.password))
-                .set("creationDate", Timestamp.now())
-                .set("role", data.role);
-        setWithNulls(eb, "birthDate", data.birthDate);
-        setWithNulls(eb, "phoneNum", data.phoneNum);
-        setWithNulls(eb, "nif", data.nif);
-        setVisibility(eb, data.visibility);
-        setAddress(eb, data.address);
-        setWithNulls(eb, "photo", data.photo);
+                .set(DatastoreTypes.EMAIL_ATTR, data.email)
+                .set(DatastoreTypes.NAME_ATTR, data.name)
+                .set(DatastoreTypes.PASSWORD_ATTR, PasswordUtils.hashPass(data.password))
+                .set(DatastoreTypes.CREATION_DATE_ATTR, Timestamp.now())
+                .set(DatastoreTypes.ROLE_ATTR, data.role)
+                .setNull(DatastoreTypes.BIRTH_DATE_ATTR)
+                .setNull(DatastoreTypes.PHONE_NUM_ATTR)
+                .setNull(DatastoreTypes.NIF_ATTR)
+                .setNull(DatastoreTypes.VISIBILITY_ATTR)
+                .setNull(DatastoreTypes.STREET_ATTR)
+                .setNull(DatastoreTypes.LOCALE_ATTR)
+                .setNull(DatastoreTypes.ZIP_CODE_ATTR)
+                .setNull(DatastoreTypes.PHOTO_ATTR);
         return eb.build();
     }
 
