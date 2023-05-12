@@ -6,6 +6,9 @@ public final class DatastoreTypes {
     public static final String STUDENT_TYPE = "Student";
     public static final String PROFESSOR_TYPE = "Professor";
     public static final String EMPLOYEE_TYPE = "Employee";
+    public static final String LOGIN_REGISTRY_TYPE = "LoginRegistry";
+    public static final String LOGIN_LOG_TYPE = "LoginLog";
+    public static final String LOGIN_REGISTRY_KEY = "loginReg";
     public static final String EMAIL_ATTR = "email";
     public static final String NAME_ATTR = "name";
     public static final String PASSWORD_ATTR = "password";
@@ -20,6 +23,17 @@ public final class DatastoreTypes {
     public static final String ZIP_CODE_ATTR = "zipCode";
     public static final String PHOTO_ATTR = "photo";
     public static final String STUDENT_NUM_ATTR = "studentNumber";
+    public static final String SUCCESS_LOGINS_ATTR = "successLogins";
+    public static final String FAIL_LOGINS_ATTR = "failLogins";
+    public static final String FIRST_LOGIN_ATTR = "firstLogin";
+    public static final String LAST_LOGIN_ATTR = "lastLogin";
+    public static final String LAST_ATTEMPT_ATTR = "lastAttempt";
+    public static final String LOGIN_IP_ATTR = "loginIP";
+    public static final String LOGIN_HOST_ATTR = "loginHost";
+    public static final String LOGIN_COUNTRY_ATTR = "loginCountry";
+    public static final String LOGIN_CITY_ATTR = "loginCity";
+    public static final String LOGIN_TIME_ATTR = "loginTime";
+    public static final String LOGIN_COORDS_ATTR = "loginCoords";
 
     private DatastoreTypes() {
     }

@@ -8,10 +8,7 @@ import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.LoginData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -33,10 +30,9 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class LoginResource {
 
-    private static final String USER_TYPE = "User";
     private static final Logger LOG = Logger.getLogger(LoginResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(USER_TYPE);
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
 
     public LoginResource() {
@@ -106,13 +102,13 @@ public class LoginResource {
     }
 
     private Key createLoginRegistryKey(String username) {
-        return datastore.newKeyFactory().setKind("LoginRegistry").addAncestors(PathElement.of(USER_TYPE, username))
-                .newKey("loginReg");
+        return datastore.newKeyFactory().setKind(DatastoreTypes.LOGIN_REGISTRY_TYPE).addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username))
+                .newKey(DatastoreTypes.LOGIN_REGISTRY_KEY);
     }
 
     private Key createLoginLogKey(String username) {
-        return datastore.allocateId(datastore.newKeyFactory().setKind("LoginLog")
-                .addAncestors(PathElement.of(USER_TYPE, username)).newKey());
+        return datastore.allocateId(datastore.newKeyFactory().setKind(DatastoreTypes.LOGIN_LOG_TYPE)
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey());
     }
 
     private boolean checkLoginRegistryOnDB(Entity e) {
@@ -131,49 +127,49 @@ public class LoginResource {
         final boolean checkLoginRegistryOnDB = checkLoginRegistryOnDB(e);
         if (!checkLoginRegistryOnDB) {
             return Entity.newBuilder(key)
-                    .set("success_logins", 0L)
-                    .set("fail_logins", 0L)
-                    .setNull("first_login")
-                    .setNull("last_login")
-                    .setNull("last_attempt")
+                    .set(DatastoreTypes.SUCCESS_LOGINS_ATTR, 0L)
+                    .set(DatastoreTypes.FAIL_LOGINS_ATTR, 0L)
+                    .setNull(DatastoreTypes.FIRST_LOGIN_ATTR)
+                    .setNull(DatastoreTypes.LAST_LOGIN_ATTR)
+                    .setNull(DatastoreTypes.LAST_ATTEMPT_ATTR)
                     .build();
         }
         return e;
     }
 
     private boolean checkPassword(String password, Entity userOnDB) {
-        return userOnDB.getString("password").equals(PasswordUtils.hashPass(password));
+        return userOnDB.getString(DatastoreTypes.PASSWORD_ATTR).equals(PasswordUtils.hashPass(password));
     }
 
     private Entity createLoginLog(Key key, HttpHeaders headers, HttpServletRequest request, Timestamp time) {
         return Entity.newBuilder(key)
-                .set("login_ip", request.getRemoteAddr())
-                .set("login_host", request.getRemoteHost())
-                .set("login_country", headers.getHeaderString("X-AppEngine-Country"))
-                .set("login_city", headers.getHeaderString("X-AppEngine-City"))
-                .set("login_time", time)
-                .set("login_coords", StringValue.newBuilder(headers.getHeaderString("X-AppEngine-CityLatLong"))
+                .set(DatastoreTypes.LOGIN_IP_ATTR, request.getRemoteAddr())
+                .set(DatastoreTypes.LOGIN_HOST_ATTR, request.getRemoteHost())
+                .set(DatastoreTypes.LOGIN_COUNTRY_ATTR, headers.getHeaderString("X-AppEngine-Country"))
+                .set(DatastoreTypes.LOGIN_CITY_ATTR, headers.getHeaderString("X-AppEngine-City"))
+                .set(DatastoreTypes.LOGIN_TIME_ATTR, time)
+                .set(DatastoreTypes.LOGIN_COORDS_ATTR, StringValue.newBuilder(headers.getHeaderString("X-AppEngine-CityLatLong"))
                         .setExcludeFromIndexes(true).build())
                 .build();
     }
 
     private Entity updateLoginRegistryOnLoginSuccess(Entity e, Timestamp time) {
         Entity.Builder eb = Entity.newBuilder(e);
-        if (e.isNull("first_login")) {
-            eb.set("first_login", time);
+        if (e.isNull(DatastoreTypes.FIRST_LOGIN_ATTR)) {
+            eb.set(DatastoreTypes.FIRST_LOGIN_ATTR, time);
         }
-        return eb.set("success_logins", 1 + e.getLong("success_logins"))
-                .set("last_login", time).build();
+        return eb.set(DatastoreTypes.SUCCESS_LOGINS_ATTR, 1 + e.getLong(DatastoreTypes.SUCCESS_LOGINS_ATTR))
+                .set(DatastoreTypes.LAST_LOGIN_ATTR, time).build();
     }
 
     private Entity updateLoginRegistryOnLoginFail(Entity e) {
         return Entity.newBuilder(e)
-                .set("fail_logins", 1 + e.getLong("fail_logins"))
-                .set("last_attempt", Timestamp.now()).build();
+                .set(DatastoreTypes.FAIL_LOGINS_ATTR, 1 + e.getLong(DatastoreTypes.FAIL_LOGINS_ATTR))
+                .set(DatastoreTypes.LAST_ATTEMPT_ATTR, Timestamp.now()).build();
     }
 
     private String createToken(String username, Entity userOnDB) {
-        final String role = userOnDB.getString("role");
+        final String role = userOnDB.getString(DatastoreTypes.ROLE_ATTR);
         return TokenUtils.createToken(username, role);
     }
 
