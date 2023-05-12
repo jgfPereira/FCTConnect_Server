@@ -106,7 +106,7 @@ public class RegisterResource {
     }
 
     private Entity createSpecificUser(String username, String role) {
-        final Key key = datastore.newKeyFactory().setKind(role).addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+        final Key key = datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role)).addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
         final Entity.Builder eb = Entity.newBuilder(key);
         if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
             eb.setNull(DatastoreTypes.STUDENT_NUM_ATTR);

@@ -23,4 +23,10 @@ public final class DatastoreTypes {
 
     private DatastoreTypes() {
     }
+
+    public static String formatRoleType(String role) {
+        StringBuilder sb = new StringBuilder(role.toLowerCase());
+        sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
+        return sb.toString();
+    }
 }
