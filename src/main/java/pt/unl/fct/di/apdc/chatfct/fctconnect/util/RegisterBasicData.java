@@ -4,7 +4,6 @@ import org.apache.commons.validator.routines.EmailValidator;
 
 public class RegisterBasicData {
 
-    public static final String DEFAULT_ROLE = "UNASSIGNED";
     public static final String DEFAULT_VISIBILITY = "PRIVATE";
     public String username;
     public String email;
