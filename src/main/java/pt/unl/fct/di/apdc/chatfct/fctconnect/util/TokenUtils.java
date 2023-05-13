@@ -18,7 +18,7 @@ public final class TokenUtils {
     private static final String TOKEN_DELIMITER = " ";
     private static final String ROLE_ATTR = "role";
     private static final String IS_REVOKED_ATTR = "isRevoked";
-    private static final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    private static final SecretKey KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
     private TokenUtils() {
     }
@@ -32,12 +32,12 @@ public final class TokenUtils {
                 .setExpiration(expirationTime)
                 .claim(ROLE_ATTR, role)
                 .claim(IS_REVOKED_ATTR, false)
-                .signWith(key)
+                .signWith(KEY)
                 .compact();
     }
 
     public static TokenInfo verifyToken(final String token) {
-        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+        Claims claims = Jwts.parserBuilder().setSigningKey(KEY).build().parseClaimsJws(token).getBody();
         final String subject = claims.getSubject();
         final String role = claims.get(ROLE_ATTR, String.class);
         final boolean isRevoked = claims.get(IS_REVOKED_ATTR, Boolean.class);

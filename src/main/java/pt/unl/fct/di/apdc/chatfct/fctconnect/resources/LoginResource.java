@@ -183,13 +183,13 @@ public class LoginResource {
 
     @POST
     @Path("/history")
-    @Consumes(MediaType.APPLICATION_JSON)
     public Response doLoginTimes(@Context HttpHeaders headers, @Context HttpServletRequest request) {
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
             return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         }
+        LOG.fine("Valid token. Proceeding...");
         Key userKey = userKeyFactory.newKey(tokenInfo.getUsername());
         Transaction txn = datastore.newTransaction();
         try {
@@ -219,7 +219,6 @@ public class LoginResource {
 
     private TokenInfo verifyToken(final String token) {
         try {
-            LOG.fine("Valid token. Proceeding...");
             return TokenUtils.verifyToken(token);
         } catch (JwtException ex) {
             LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
