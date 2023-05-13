@@ -6,8 +6,7 @@ import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
 import com.google.cloud.datastore.StructuredQuery.OrderBy;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -20,8 +19,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -31,6 +32,8 @@ import java.util.logging.Logger;
 public class LoginResource {
 
     private static final Logger LOG = Logger.getLogger(LoginResource.class.getName());
+    private static final String DEFAULT_TIME_ZONE = "UTC";
+    private static final int QUERY_LIMIT = 5;
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
@@ -176,61 +179,70 @@ public class LoginResource {
     @POST
     @Path("/history")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doLoginTimes(String usernameJSON, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        JsonObject jsonObj = new Gson().fromJson(usernameJSON, JsonObject.class);
-        String username = null;
-        if (jsonObj == null) {
-            LOG.fine("Invalid data");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
-        } else {
-            JsonElement jsonElement = jsonObj.get("username");
-            if (jsonElement == null) {
-                LOG.fine("Invalid data");
-                return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
+    public Response doLoginTimes(@Context HttpHeaders headers, @Context HttpServletRequest request) {
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        Key userKey = userKeyFactory.newKey(tokenInfo.getUsername());
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity userOnDB = txn.get(userKey);
+            Response checkUserOnDB = checkUserOnDB(userOnDB);
+            if (checkUserOnDB != null) {
+                txn.rollback();
+                return checkUserOnDB;
             }
-            username = jsonElement.getAsString();
-        }
-        Key userKey = datastore.newKeyFactory().setKind("User").newKey(username);
-        String headerToken = AuthToken.getAuthHeader(request);
-        if (headerToken == null) {
-            LOG.fine("Wrong credentials/token - no auth header or invalid auth type");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
-        }
-        Key loginAuthTokenKey = datastore.newKeyFactory()
-                .addAncestors(PathElement.of("User", username)).setKind("AuthToken").newKey(headerToken);
-        Entity tokenOnDB = datastore.get(loginAuthTokenKey);
-        if (tokenOnDB == null) {
-            LOG.fine("Wrong credentials/token - not found");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
-        } else {
-            boolean isTokenValid = AuthToken.isValid(tokenOnDB.getLong("expirationDate"), tokenOnDB.getBoolean("isRevoked"));
-            if (!isTokenValid) {
-                LOG.fine("Expired token");
-                return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+            Query<Entity> loginLogsQuery = getLoginLogsQuery(userKey);
+            QueryResults<Entity> loginLogs = txn.run(loginLogsQuery);
+            List<LocalDateTime> loginTimes = getLoginTimes(loginLogs);
+            txn.commit();
+            LOG.fine("Login times were successfully fetched");
+            return Response.ok(gson.toJson(loginTimes)).build();
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
-            LOG.fine("Valid token - proceeding");
         }
-        Entity userOnDB = datastore.get(userKey);
-        if (userOnDB == null) {
-            LOG.fine("User dont exist");
-            return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
+    }
+
+    private TokenInfo verifyToken(final String token) {
+        try {
+            LOG.fine("Valid token. Proceeding...");
+            return TokenUtils.verifyToken(token);
+        } catch (JwtException ex) {
+            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
+            return null;
         }
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, -1);
-        Timestamp yesterday = Timestamp.of(cal.getTime());
-        Query<Entity> query = Query.newEntityQueryBuilder()
-                .setKind("LoginLog")
+    }
+
+    private Query<Entity> getLoginLogsQuery(Key key) {
+        LocalDate lastDay = LocalDate.now(ZoneId.of(DEFAULT_TIME_ZONE)).minusDays(1);
+        Timestamp timestamp = Timestamp.ofTimeMicroseconds(lastDay.
+                atStartOfDay(ZoneId.of(DEFAULT_TIME_ZONE)).toInstant().toEpochMilli() * 1000L);
+        return Query.newEntityQueryBuilder()
+                .setKind(DatastoreTypes.LOGIN_LOG_TYPE)
                 .setFilter(CompositeFilter.and(
-                        PropertyFilter.hasAncestor(userKey),
-                        PropertyFilter.ge("login_time", yesterday)))
-                .setOrderBy(OrderBy.desc("login_time"))
-                .setLimit(3)
+                        PropertyFilter.hasAncestor(key),
+                        PropertyFilter.ge(DatastoreTypes.LOGIN_TIME_ATTR, timestamp)))
+                .setOrderBy(OrderBy.desc(DatastoreTypes.LOGIN_TIME_ATTR))
+                .setLimit(QUERY_LIMIT)
                 .build();
-        QueryResults<Entity> logs = datastore.run(query);
-        List<Date> loginTimes = new ArrayList<>();
-        logs.forEachRemaining(userLog -> {
-            loginTimes.add(userLog.getTimestamp("login_time").toDate());
-        });
-        return Response.ok(gson.toJson(loginTimes)).build();
+    }
+
+    private List<LocalDateTime> getLoginTimes(QueryResults<Entity> loginLogs) {
+        List<LocalDateTime> loginTimes = new ArrayList<>();
+        loginLogs.forEachRemaining(log -> loginTimes.add(convertDateToLocalDateTime(log.getTimestamp(DatastoreTypes.LOGIN_TIME_ATTR).toDate())));
+        return loginTimes;
+    }
+
+    private LocalDateTime convertDateToLocalDateTime(Date date) {
+        return date.toInstant().atZone(ZoneId.of(DEFAULT_TIME_ZONE)).toLocalDateTime();
     }
 }
