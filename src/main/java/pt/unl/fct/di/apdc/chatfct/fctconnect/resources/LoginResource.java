@@ -6,6 +6,7 @@ import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
 import com.google.cloud.datastore.StructuredQuery.OrderBy;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
@@ -36,9 +37,13 @@ public class LoginResource {
     private static final int QUERY_LIMIT = 5;
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
-    private final Gson gson = new Gson();
+    private final Gson gson = initGson();
 
     public LoginResource() {
+    }
+
+    private static Gson initGson() {
+        return new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter()).create();
     }
 
     @POST
