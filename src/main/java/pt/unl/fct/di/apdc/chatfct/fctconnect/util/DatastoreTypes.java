@@ -37,6 +37,7 @@ public final class DatastoreTypes {
     public static final String LOGIN_TIME_ATTR = "loginTime";
     public static final String LOGIN_COORDS_ATTR = "loginCoords";
     public static final String SECRET_KEY_ATTR = "secretKey";
+    public static final String AES_KEY_ATTR = "aesKey";
     public static final String INIT_VECTOR_ATTR = "initVector";
 
     private DatastoreTypes() {
