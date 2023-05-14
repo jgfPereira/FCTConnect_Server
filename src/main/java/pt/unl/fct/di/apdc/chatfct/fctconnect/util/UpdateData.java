@@ -1,24 +1,18 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public class UpdateData {
-
-    public String updaterUsername;
     public String updatedUsername;
-    public String[] attributesNames;
-    public String[] attributesValues;
+    public UpdateEntry[] updateEntries;
+
 
     public UpdateData() {
     }
 
     public boolean validateData() {
-        return !(this.updaterUsername == null || this.updatedUsername == null || this.attributesNames == null || this.attributesValues == null);
+        return !(this.updatedUsername == null || this.updateEntries == null || this.updateEntries.length == 0);
     }
 
-    public boolean isSameUser() {
-        return this.updaterUsername.equals(this.updatedUsername);
-    }
-
-    public boolean validateUpdatePermissions(String updaterRole, String updatedRole, String attributeName, String attributeValue) {
-        return RolePermissions.canUpdate(this, updaterRole, updatedRole, attributeName, attributeValue);
+    public boolean isSameUser(String username) {
+        return username.equals(this.updatedUsername);
     }
 }
