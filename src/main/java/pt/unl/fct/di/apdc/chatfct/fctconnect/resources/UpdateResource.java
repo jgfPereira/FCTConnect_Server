@@ -100,7 +100,7 @@ public class UpdateResource {
             if (!RolePermissions.canUpdate(data, username, entry.propertyName)) {
                 LOG.fine("Dont have permission to update property " + entry.propertyName);
                 forbiddenUpdates.add(entry.propertyName);
-            } else if (!checkPropertyFormat(entry.propertyName)) {
+            } else if (!checkPropertyFormat(entry.propertyName, entry.newValue)) {
                 LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
                 invalidFormatUpdates.add(entry.propertyName);
             } else {
@@ -111,23 +111,23 @@ public class UpdateResource {
         return eb.build();
     }
 
-    private boolean checkPropertyFormat(String property) {
+    private boolean checkPropertyFormat(String property, String newValue) {
         switch (property) {
             case DatastoreTypes.BIRTH_DATE_ATTR:
-                return property.matches(RegexExp.DATE_REGEX);
+                return newValue.matches(RegexExp.DATE_REGEX);
             case DatastoreTypes.LOCALE_ATTR:
             case DatastoreTypes.NAME_ATTR:
             case DatastoreTypes.PHOTO_ATTR:
             case DatastoreTypes.STREET_ATTR:
                 return true;
             case DatastoreTypes.NIF_ATTR:
-                return property.matches(RegexExp.NIF_REGEX);
+                return newValue.matches(RegexExp.NIF_REGEX);
             case DatastoreTypes.PHONE_NUM_ATTR:
-                return property.matches(RegexExp.PHONE_NUM_REGEX);
+                return newValue.matches(RegexExp.PHONE_NUM_REGEX);
             case DatastoreTypes.VISIBILITY_ATTR:
-                return property.matches(RegexExp.VISIBILITY_REGEX);
+                return newValue.matches(RegexExp.VISIBILITY_REGEX);
             case DatastoreTypes.ZIP_CODE_ATTR:
-                return property.matches(RegexExp.ZIP_CODE_REGEX);
+                return newValue.matches(RegexExp.ZIP_CODE_REGEX);
             default:
                 return false;
         }
@@ -143,10 +143,12 @@ public class UpdateResource {
             return Response.ok(gson.toJson("Updated all properties")).build();
         } else if (forbiddenUpdates.size() + invalidFormatUpdates.size() == data.updateEntries.length) {
             LOG.info("None of the properties were updated");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates))).build();
+            final String str = gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates));
+            return Response.status(Response.Status.UNAUTHORIZED).entity(escapeNewLinesGson(str)).build();
         } else {
             LOG.info("Some properties were not updated");
-            return Response.ok(gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates))).build();
+            final String str = gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates));
+            return Response.ok(escapeNewLinesGson(str)).build();
         }
     }
 
@@ -162,6 +164,10 @@ public class UpdateResource {
             appendPropertiesNotUpdated(sb, invalidFormatUpdates);
         }
         return sb.toString();
+    }
+
+    private String escapeNewLinesGson(String str) {
+        return str.replace("\n", "\r\n");
     }
 
     private void appendPropertiesNotUpdated(StringBuilder sb, List<String> list) {

@@ -4,12 +4,10 @@ import java.util.Objects;
 
 public class UpdateEntry {
 
-    public final String propertyName;
-    public final String newValue;
+    public String propertyName;
+    public String newValue;
 
-    public UpdateEntry(String propertyName, String newValue) {
-        this.propertyName = propertyName;
-        this.newValue = newValue;
+    public UpdateEntry() {
     }
 
     @Override

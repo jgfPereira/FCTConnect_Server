@@ -17,6 +17,7 @@ public class RemoveData {
     }
 
     public boolean validateRemovalPermissions(String removerRole, String removedRole) {
-        return this.isSameUser() || RolePermissions.canRemove(removerRole, removedRole);
+//        return this.isSameUser() || RolePermissions.canRemove(removerRole, removedRole);
+        return false;
     }
 }
