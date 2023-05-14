@@ -8,7 +8,9 @@ public final class DatastoreTypes {
     public static final String EMPLOYEE_TYPE = "Employee";
     public static final String LOGIN_REGISTRY_TYPE = "LoginRegistry";
     public static final String LOGIN_LOG_TYPE = "LoginLog";
+    public static final String SECRET_KEY_TYPE = "SecretKey";
     public static final String LOGIN_REGISTRY_KEY = "loginReg";
+    public static final String SECRET_KEY_KEY = "secretKey";
     public static final String EMAIL_ATTR = "email";
     public static final String NAME_ATTR = "name";
     public static final String PASSWORD_ATTR = "password";
@@ -34,6 +36,8 @@ public final class DatastoreTypes {
     public static final String LOGIN_CITY_ATTR = "loginCity";
     public static final String LOGIN_TIME_ATTR = "loginTime";
     public static final String LOGIN_COORDS_ATTR = "loginCoords";
+    public static final String SECRET_KEY_ATTR = "secretKey";
+    public static final String INIT_VECTOR_ATTR = "initVector";
 
     private DatastoreTypes() {
     }
