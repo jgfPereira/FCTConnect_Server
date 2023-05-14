@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 public class UpdateResource {
 
     private static final Logger LOG = Logger.getLogger(UpdateResource.class.getName());
+    private static final String SEPARATOR = " ";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
@@ -143,12 +144,10 @@ public class UpdateResource {
             return Response.ok(gson.toJson("Updated all properties")).build();
         } else if (forbiddenUpdates.size() + invalidFormatUpdates.size() == data.updateEntries.length) {
             LOG.info("None of the properties were updated");
-            final String str = gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates));
-            return Response.status(Response.Status.UNAUTHORIZED).entity(escapeNewLinesGson(str)).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates))).build();
         } else {
             LOG.info("Some properties were not updated");
-            final String str = gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates));
-            return Response.ok(escapeNewLinesGson(str)).build();
+            return Response.ok(gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates))).build();
         }
     }
 
@@ -166,13 +165,9 @@ public class UpdateResource {
         return sb.toString();
     }
 
-    private String escapeNewLinesGson(String str) {
-        return str.replace("\n", "\r\n");
-    }
-
     private void appendPropertiesNotUpdated(StringBuilder sb, List<String> list) {
         for (String s : list) {
-            sb.append(" ").append(s);
+            sb.append(SEPARATOR).append(s);
         }
     }
 
