@@ -3,22 +3,27 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.resources.SecretKeyResource;
 
 import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.logging.Logger;
 
 public final class TokenUtils {
 
     public static final String AUTH_HEADER = "X-Auth-Token";
     public static final String AUTH_TYPE = "Bearer ";
+    private static final Logger LOG = Logger.getLogger(TokenUtils.class.getName());
     private static final int EXPIRATION_WINDOW = 7200000; // 2 hours
     private static final String TOKEN_DELIMITER = " ";
     private static final String ROLE_ATTR = "role";
     private static final String IS_REVOKED_ATTR = "isRevoked";
-    private static final SecretKey KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    private static final SecretKey KEY;
+
+    static {
+        KEY = new SecretKeyResource().decryptSecretKey();
+    }
 
     private TokenUtils() {
     }

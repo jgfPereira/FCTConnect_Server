@@ -10,6 +10,7 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -23,9 +24,10 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class SecretKeyResource {
 
-    private static final String ENCRYPT_ALG = "AES/CBC/PKCS5Padding";
-    private static final String KEY_TYPE = "AES";
+    public static final String ENCRYPT_ALG = "AES/CBC/PKCS5Padding";
+    public static final String KEY_TYPE = "AES";
     private static final int KEY_SIZE = 256;
+    private static final String JWT_SIGNATURE_ALG = "HmacSHA512";
     private static final Logger LOG = Logger.getLogger(SecretKeyResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory secretKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.SECRET_KEY_TYPE);
@@ -115,5 +117,63 @@ public class SecretKeyResource {
         } else {
             return null;
         }
+    }
+
+    private byte[][] getSecretKey() {
+        Key key = secretKeyFactory.newKey(DatastoreTypes.SECRET_KEY_KEY);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity secretKeyOnDB = txn.get(key);
+            if (secretKeyOnDB == null) {
+                txn.rollback();
+                LOG.fine("Secret key does not exist");
+                return null;
+            }
+            byte[][] secretKeyData = extractSecretKeyData(secretKeyOnDB);
+            txn.commit();
+            LOG.fine("Secret key was fetched");
+            return secretKeyData;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return null;
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+            }
+        }
+    }
+
+    public SecretKey decryptSecretKey() {
+        byte[][] secretKeyData = getSecretKey();
+        if (secretKeyData == null) {
+            LOG.warning("Impossible to get secret key from datastore");
+            return null;
+        }
+        final byte[] secretKeyEncrypted = secretKeyData[0];
+        final byte[] aesKeyDecoded = secretKeyData[1];
+        final byte[] initVectorDecoded = secretKeyData[2];
+        try {
+            SecretKey aesKey = new SecretKeySpec(aesKeyDecoded, KEY_TYPE);
+            Cipher cipher = Cipher.getInstance(ENCRYPT_ALG);
+            cipher.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(initVectorDecoded));
+            byte[] decryptedSecretKey = cipher.doFinal(secretKeyEncrypted);
+            LOG.fine("Secret key was decrypted");
+            return new SecretKeySpec(decryptedSecretKey, JWT_SIGNATURE_ALG);
+        } catch (Exception ex) {
+            LOG.warning("Error decrypting secret key --> " + ex.getLocalizedMessage());
+            return null;
+        }
+    }
+
+    private byte[][] extractSecretKeyData(Entity secretKeyOnDB) {
+        String secretKey = secretKeyOnDB.getString(DatastoreTypes.SECRET_KEY_ATTR);
+        String aesKey = secretKeyOnDB.getString(DatastoreTypes.AES_KEY_ATTR);
+        String initVector = secretKeyOnDB.getString(DatastoreTypes.INIT_VECTOR_ATTR);
+        return new byte[][]{decodeBase64(secretKey), decodeBase64(aesKey), decodeBase64(initVector)};
+    }
+
+    private byte[] decodeBase64(String str) {
+        return Base64.getDecoder().decode(str);
     }
 }
