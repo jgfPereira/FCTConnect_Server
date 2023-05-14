@@ -41,11 +41,11 @@ public class UpdateResource {
         }
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
-        final String usernameRole = tokenInfo.getRole();
         final Response checkData = checkData(data);
         if (checkData != null) {
             return checkData;
         }
+        data.removeDuplicates();
         Key usernameKey = userKeyFactory.newKey(username);
         Key otherKey = userKeyFactory.newKey(data.updatedUsername);
         Transaction txn = datastore.newTransaction();
@@ -58,11 +58,14 @@ public class UpdateResource {
                 return checkUsersOnDB;
             }
             final List<String> forbiddenUpdates = new ArrayList<>();
-            Entity updatedUser = updateUser(otherOnDB, data, username, forbiddenUpdates);
-            txn.update(updatedUser);
+            final List<String> invalidFormatUpdates = new ArrayList<>();
+            Entity updatedUser = updateUser(otherOnDB, data, username, forbiddenUpdates, invalidFormatUpdates);
+            if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
+                txn.update(updatedUser);
+            }
             txn.commit();
-            LOG.fine("User was updated - if permissions checked out");
-            return checkForbiddenUpdates(data, forbiddenUpdates);
+            LOG.fine("User was updated - if permissions and format checked out");
+            return createResponseBasedOnUpdates(data, forbiddenUpdates, invalidFormatUpdates);
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -91,15 +94,18 @@ public class UpdateResource {
         return null;
     }
 
-    private Entity updateUser(Entity e, UpdateData data, String username, List<String> forbiddenUpdates) {
+    private Entity updateUser(Entity e, UpdateData data, String username, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(e);
         for (UpdateEntry entry : data.updateEntries) {
-            if (RolePermissions.canUpdate(data, username, entry.propertyName)) {
-                eb.set(entry.propertyName, entry.newValue);
-                LOG.fine("Updated property " + entry.propertyName);
-            } else {
+            if (!RolePermissions.canUpdate(data, username, entry.propertyName)) {
                 LOG.fine("Dont have permission to update property " + entry.propertyName);
                 forbiddenUpdates.add(entry.propertyName);
+            } else if (!checkPropertyFormat(entry.propertyName)) {
+                LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
+                invalidFormatUpdates.add(entry.propertyName);
+            } else {
+                LOG.fine("Updated property " + entry.propertyName);
+                eb.set(entry.propertyName, entry.newValue);
             }
         }
         return eb.build();
@@ -127,25 +133,41 @@ public class UpdateResource {
         }
     }
 
-    private Response checkForbiddenUpdates(UpdateData data, List<String> forbiddenUpdates) {
-        if (forbiddenUpdates.isEmpty()) {
+    private boolean didUserChanged(List<String> forbiddenUpdates, List<String> invalidFormatUpdates, UpdateEntry[] updateEntries) {
+        return forbiddenUpdates.size() + invalidFormatUpdates.size() != updateEntries.length;
+    }
+
+    private Response createResponseBasedOnUpdates(UpdateData data, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+        if (forbiddenUpdates.isEmpty() && invalidFormatUpdates.isEmpty()) {
             LOG.fine("Updated all properties");
             return Response.ok(gson.toJson("Updated all properties")).build();
-        } else if (forbiddenUpdates.size() == data.updateEntries.length) {
+        } else if (forbiddenUpdates.size() + invalidFormatUpdates.size() == data.updateEntries.length) {
             LOG.info("None of the properties were updated");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("None of the properties were updated: " + appendForbiddenUpdates(forbiddenUpdates))).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates))).build();
         } else {
             LOG.info("Some properties were not updated");
-            return Response.ok(gson.toJson("Some properties were not updated: " + appendForbiddenUpdates(forbiddenUpdates))).build();
+            return Response.ok(gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates))).build();
         }
     }
 
-    private String appendForbiddenUpdates(List<String> forbiddenUpdates) {
-        StringBuilder sb = new StringBuilder();
-        for (String s : forbiddenUpdates) {
-            sb.append(" ").append(s);
+    private String createResponseString(String baseString, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(baseString);
+        if (!forbiddenUpdates.isEmpty()) {
+            sb.append("\nForbidden updates:");
+            appendPropertiesNotUpdated(sb, forbiddenUpdates);
+        }
+        if (!invalidFormatUpdates.isEmpty()) {
+            sb.append("\nInvalid format updates:");
+            appendPropertiesNotUpdated(sb, invalidFormatUpdates);
         }
         return sb.toString();
+    }
+
+    private void appendPropertiesNotUpdated(StringBuilder sb, List<String> list) {
+        for (String s : list) {
+            sb.append(" ").append(s);
+        }
     }
 
     private TokenInfo verifyToken(final String token) {

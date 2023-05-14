@@ -1,5 +1,8 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class UpdateData {
     public String updatedUsername;
     public UpdateEntry[] updateEntries;
@@ -10,6 +13,16 @@ public class UpdateData {
 
     public boolean validateData() {
         return !(this.updatedUsername == null || this.updateEntries == null || this.updateEntries.length == 0);
+    }
+
+    public void removeDuplicates() {
+        List<UpdateEntry> res = new ArrayList<>();
+        for (UpdateEntry entry : updateEntries) {
+            if (!res.contains(entry)) {
+                res.add(entry);
+            }
+        }
+        updateEntries = res.toArray(new UpdateEntry[res.size()]);
     }
 
     public boolean isSameUser(String username) {
