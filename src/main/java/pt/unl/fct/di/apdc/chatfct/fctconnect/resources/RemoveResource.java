@@ -14,6 +14,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Path("/remove")
@@ -62,6 +64,16 @@ public class RemoveResource {
             }
             Key specificUserKey = getSpecificUserKey(data.removedUsername, usernameRole);
             txn.delete(specificUserKey);
+            Key loginRegistryKey = getLoginRegistryKey(data.removedUsername);
+            Entity loginRegistry = txn.get(loginRegistryKey);
+            final boolean isLoginRegistryOnDB = checkLoginRegistryOnDB(loginRegistry);
+            if (isLoginRegistryOnDB) {
+                txn.delete(loginRegistryKey);
+                Query<Entity> loginLogsQuery = getLoginLogsQuery(otherKey);
+                QueryResults<Entity> loginLogs = txn.run(loginLogsQuery);
+                Key[] keysToRemove = removeLoginLogs(loginLogs);
+                txn.delete(keysToRemove);
+            }
             txn.delete(otherKey);
             txn.commit();
             LOG.fine("Remove done: " + data.removedUsername);
@@ -115,5 +127,28 @@ public class RemoveResource {
         return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
                 .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username))
                 .newKey(username);
+    }
+
+    private Key getLoginRegistryKey(String username) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.LOGIN_REGISTRY_TYPE)
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username))
+                .newKey(DatastoreTypes.LOGIN_REGISTRY_KEY);
+    }
+
+    private boolean checkLoginRegistryOnDB(Entity e) {
+        return e != null;
+    }
+
+    private Query<Entity> getLoginLogsQuery(Key userKey) {
+        return Query.newEntityQueryBuilder().setKind(DatastoreTypes.LOGIN_LOG_TYPE)
+                .setFilter(StructuredQuery.PropertyFilter
+                        .hasAncestor(userKey))
+                .build();
+    }
+
+    private Key[] removeLoginLogs(QueryResults<Entity> loginLogs) {
+        List<Key> keys = new ArrayList<>();
+        loginLogs.forEachRemaining(log -> keys.add(log.getKey()));
+        return keys.toArray(new Key[keys.size()]);
     }
 }
