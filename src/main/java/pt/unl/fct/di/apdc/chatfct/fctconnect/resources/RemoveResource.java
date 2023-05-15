@@ -2,8 +2,8 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RemoveData;
+import io.jsonwebtoken.JwtException;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -22,7 +22,8 @@ public class RemoveResource {
 
     private static final Logger LOG = Logger.getLogger(RemoveResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final Gson g = new Gson();
+    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final Gson gson = new Gson();
 
     public RemoveResource() {
     }
@@ -30,63 +31,89 @@ public class RemoveResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doRemove(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to remove other user");
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(g.toJson("Bad Request - Invalid data")).build();
+        LOG.fine("User attempt to remove user");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         }
-        Key removerUserKey = datastore.newKeyFactory().setKind("User").newKey(data.removerUsername);
-        Key removedUserKey = datastore.newKeyFactory().setKind("User").newKey(data.removedUsername);
-        String headerToken = AuthToken.getAuthHeader(request);
-        if (headerToken == null) {
-            LOG.fine("Wrong credentials/token - no auth header or invalid auth type");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String usernameRole = tokenInfo.getRole();
+        final Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
         }
-        Key loginAuthTokenKey = datastore.newKeyFactory()
-                .addAncestors(PathElement.of("User", data.removerUsername)).setKind("AuthToken").newKey(headerToken);
+        Key usernameKey = userKeyFactory.newKey(username);
+        Key otherKey = userKeyFactory.newKey(data.removedUsername);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity tokenOnDB = txn.get(loginAuthTokenKey);
-            if (tokenOnDB == null) {
-                LOG.fine("Wrong credentials/token - not found");
+            Entity usernameOnDB = txn.get(usernameKey);
+            Entity otherOnDB = txn.get(otherKey);
+            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
+            if (checkUsersOnDB != null) {
                 txn.rollback();
-                return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
-            } else {
-                boolean isTokenValid = AuthToken.isValid(tokenOnDB.getLong("expirationDate"), tokenOnDB.getBoolean("isRevoked"));
-                if (!isTokenValid) {
-                    LOG.fine("Expired token");
-                    txn.rollback();
-                    return Response.status(Response.Status.UNAUTHORIZED).entity(g.toJson("Invalid credentials")).build();
-                }
-                LOG.fine("Valid token - proceeding");
+                return checkUsersOnDB;
             }
-            Entity removerOnDB = txn.get(removerUserKey);
-            Entity removedOnDB = txn.get(removedUserKey);
-            if (removerOnDB == null || removedOnDB == null) {
-                LOG.fine("At least one of the users dont exist");
+            final Response checkRemovePermissions = checkRemovePermissions(data, username);
+            if (checkRemovePermissions != null) {
                 txn.rollback();
-                return Response.status(Response.Status.NOT_FOUND).entity(g.toJson("Not Found - At least one of the users dont exist")).build();
+                return checkRemovePermissions;
             }
-            final String removerRole = removerOnDB.getString("role");
-            final String removedRole = removedOnDB.getString("role");
-            if (!data.validateRemovalPermissions(removerRole, removedRole)) {
-                LOG.fine("Dont have permission to remove users of role " + removerRole);
-                txn.rollback();
-                return Response.status(Response.Status.FORBIDDEN).entity(g.toJson("Forbidden - Dont have permission to remove users of role " + removerRole)).build();
-            }
-            txn.delete(removedUserKey);
-            LOG.fine("Remove done: " + data.removedUsername);
+            Key specificUserKey = getSpecificUserKey(data.removedUsername, usernameRole);
+            txn.delete(specificUserKey);
+            txn.delete(otherKey);
             txn.commit();
-            return Response.ok(g.toJson("Remove done")).build();
+            LOG.fine("Remove done: " + data.removedUsername);
+            return Response.ok(gson.toJson("Remove done")).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(g.toJson("Server Error")).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
         } finally {
             if (txn.isActive()) {
                 txn.rollback();
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(g.toJson("Server Error")).build();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
         }
+    }
+
+    private TokenInfo verifyToken(final String token) {
+        try {
+            return TokenUtils.verifyToken(token);
+        } catch (JwtException ex) {
+            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
+            return null;
+        }
+    }
+
+    private Response checkData(RemoveData data) {
+        if (data == null || !data.validateData()) {
+            LOG.fine("Invalid data: at least one field is null");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
+        }
+        return null;
+    }
+
+    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
+        if (usernameOnDB == null || otherOnDB == null) {
+            LOG.fine("At least one of the users dont exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+        }
+        return null;
+    }
+
+    private Response checkRemovePermissions(RemoveData data, String username) {
+        if (!RolePermissions.canRemove(data, username)) {
+            LOG.fine("Dont have permission to remove user " + data.removedUsername);
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove user " + data.removedUsername)).build();
+        }
+        return null;
+    }
+
+    private Key getSpecificUserKey(String username, String role) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username))
+                .newKey(username);
     }
 }

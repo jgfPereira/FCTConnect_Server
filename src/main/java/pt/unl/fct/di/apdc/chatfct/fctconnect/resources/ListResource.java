@@ -7,7 +7,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.AuthToken;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RolePermissions;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -80,13 +79,13 @@ public class ListResource {
                 return Response.status(Response.Status.NOT_FOUND).entity(g.toJson("Not Found - User dont exist")).build();
             }
             final String userRole = userOnDB.getString("role");
-            if (userRole.equals(RolePermissions.USER_ROLE)) {
+            if (userRole.equals("USER")) {
                 LOG.fine("Listing clients for role " + userRole);
                 Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
                         .setKind("User")
                         .setProjection("__key__", "name", "email")
                         .setFilter(CompositeFilter.and(CompositeFilter.and(
-                                        PropertyFilter.eq("role", RolePermissions.USER_ROLE),
+                                        PropertyFilter.eq("role", "USER"),
                                         PropertyFilter.eq("state", "ACTIVE")),
                                 PropertyFilter.eq("visibility", "PUBLIC")))
                         .build();
@@ -100,11 +99,11 @@ public class ListResource {
                 LOG.fine("Listing complete");
                 txn.commit();
                 return Response.ok(g.toJson(usersListing)).build();
-            } else if (userRole.equals(RolePermissions.GBO_ROLE) || userRole.equals(RolePermissions.GA_ROLE)) {
+            } else if (userRole.equals("GBO") || userRole.equals("GA")) {
                 LOG.fine("Listing clients for role " + userRole);
                 Query<Entity> query = Query.newEntityQueryBuilder()
                         .setKind("User")
-                        .setFilter(PropertyFilter.eq("role", RolePermissions.USER_ROLE))
+                        .setFilter(PropertyFilter.eq("role", "USER"))
                         .build();
                 QueryResults<Entity> queryRes = datastore.run(query);
                 List<String> usersListing = new ArrayList<>();
@@ -129,11 +128,11 @@ public class ListResource {
                 LOG.fine("Listing complete");
                 txn.commit();
                 return Response.ok(g.toJson(usersListing)).build();
-            } else if (userRole.equals(RolePermissions.GS_ROLE)) {
+            } else if (userRole.equals("GS")) {
                 LOG.fine("Listing clients for role " + userRole);
                 Query<Entity> queryUserRole = Query.newEntityQueryBuilder()
                         .setKind("User")
-                        .setFilter(PropertyFilter.eq("role", RolePermissions.USER_ROLE))
+                        .setFilter(PropertyFilter.eq("role", "USER"))
                         .build();
                 QueryResults<Entity> queryResUserRole = datastore.run(queryUserRole);
                 List<String> usersListing = new ArrayList<>();
@@ -157,7 +156,7 @@ public class ListResource {
                 });
                 Query<Entity> queryGBORole = Query.newEntityQueryBuilder()
                         .setKind("User")
-                        .setFilter(PropertyFilter.eq("role", RolePermissions.GBO_ROLE))
+                        .setFilter(PropertyFilter.eq("role", "GBO"))
                         .build();
                 QueryResults<Entity> queryResGBORole = datastore.run(queryGBORole);
                 queryResGBORole.forEachRemaining(e -> {
@@ -181,7 +180,7 @@ public class ListResource {
                 LOG.fine("Listing complete");
                 txn.commit();
                 return Response.ok(g.toJson(usersListing)).build();
-            } else if (userRole.equals(RolePermissions.SU_ROLE)) {
+            } else if (userRole.equals("SU")) {
                 LOG.fine("Listing clients for role " + userRole);
                 Query<Entity> query = Query.newEntityQueryBuilder()
                         .setKind("User")

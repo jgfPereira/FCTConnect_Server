@@ -2,22 +2,16 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public class RemoveData {
 
-    public String removerUsername;
     public String removedUsername;
 
     public RemoveData() {
     }
 
     public boolean validateData() {
-        return !(this.removerUsername == null || this.removedUsername == null);
+        return this.removedUsername != null;
     }
 
-    public boolean isSameUser() {
-        return this.removerUsername.equals(this.removedUsername);
-    }
-
-    public boolean validateRemovalPermissions(String removerRole, String removedRole) {
-//        return this.isSameUser() || RolePermissions.canRemove(removerRole, removedRole);
-        return false;
+    public boolean isSameUser(String username) {
+        return username.equals(this.removedUsername);
     }
 }

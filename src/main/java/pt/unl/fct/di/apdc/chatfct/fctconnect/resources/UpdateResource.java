@@ -154,15 +154,16 @@ public class UpdateResource {
     private String createResponseString(String baseString, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         final StringBuilder sb = new StringBuilder();
         sb.append(baseString);
-        if (!forbiddenUpdates.isEmpty()) {
-            sb.append("\nForbidden updates:");
-            appendPropertiesNotUpdated(sb, forbiddenUpdates);
-        }
-        if (!invalidFormatUpdates.isEmpty()) {
-            sb.append("\nInvalid format updates:");
-            appendPropertiesNotUpdated(sb, invalidFormatUpdates);
-        }
+        appendPropertiesWithEmptyCheck(sb, forbiddenUpdates, "\nForbidden updates:");
+        appendPropertiesWithEmptyCheck(sb, invalidFormatUpdates, "\nInvalid format updates:");
         return sb.toString();
+    }
+
+    private void appendPropertiesWithEmptyCheck(StringBuilder sb, List<String> l, String baseStr) {
+        if (!l.isEmpty()) {
+            sb.append(baseStr);
+            appendPropertiesNotUpdated(sb, l);
+        }
     }
 
     private void appendPropertiesNotUpdated(StringBuilder sb, List<String> list) {
