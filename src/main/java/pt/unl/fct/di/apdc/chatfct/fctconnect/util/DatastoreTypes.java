@@ -39,6 +39,7 @@ public final class DatastoreTypes {
     public static final String SECRET_KEY_ATTR = "secretKey";
     public static final String AES_KEY_ATTR = "aesKey";
     public static final String INIT_VECTOR_ATTR = "initVector";
+    public static final String DEFAULT_VISIBILITY = "PUBLIC";
 
     private DatastoreTypes() {
     }

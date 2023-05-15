@@ -1,16 +1,19 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
-import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.ProjectionEntity;
+
+import java.time.ZoneId;
+import java.util.Date;
 
 public class ListedUser {
 
+    private static final String DEFAULT_TIME_ZONE = "UTC";
     private final String name;
     private final String email;
     private final String role;
-    private final Timestamp creationDate;
+    private final String creationDate;
 
-    private ListedUser(String name, String email, String role, Timestamp creationDate) {
+    private ListedUser(String name, String email, String role, String creationDate) {
         this.name = name;
         this.email = email;
         this.role = role;
@@ -21,8 +24,13 @@ public class ListedUser {
         final String name = entity.getString(DatastoreTypes.NAME_ATTR);
         final String email = entity.getString(DatastoreTypes.EMAIL_ATTR);
         final String role = DatastoreTypes.formatRoleType(entity.getString(DatastoreTypes.ROLE_ATTR));
-        final Timestamp creationDate = entity.getTimestamp(DatastoreTypes.CREATION_DATE_ATTR);
+        final String creationDate = creationDateToString(entity.getTimestamp(DatastoreTypes.CREATION_DATE_ATTR).toDate());
         return new ListedUser(name, email, role, creationDate);
+    }
+
+    private static String creationDateToString(Date date) {
+        return date.toInstant().atZone(ZoneId.of(DEFAULT_TIME_ZONE))
+                .toLocalDateTime().format(LocalDateTimeAdapter.FORMATTER);
     }
 
     @Override

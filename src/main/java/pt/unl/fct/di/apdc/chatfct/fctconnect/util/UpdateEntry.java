@@ -10,6 +10,11 @@ public class UpdateEntry {
     public UpdateEntry() {
     }
 
+    public UpdateEntry(String propertyName, String newValue) {
+        this.propertyName = propertyName;
+        this.newValue = newValue;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

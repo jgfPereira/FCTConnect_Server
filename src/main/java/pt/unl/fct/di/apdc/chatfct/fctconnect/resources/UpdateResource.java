@@ -47,6 +47,7 @@ public class UpdateResource {
             return checkData;
         }
         data.removeDuplicates();
+        data.formatVisibilityProperty();
         Key usernameKey = userKeyFactory.newKey(username);
         Key otherKey = userKeyFactory.newKey(data.updatedUsername);
         Transaction txn = datastore.newTransaction();
