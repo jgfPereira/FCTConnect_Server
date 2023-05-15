@@ -21,6 +21,7 @@ public final class RegexExp {
     public static final String ROLE_STUDENT_REGEX = "STUDENT";
     public static final String ROLE_OTHER_REGEX = "PROFESSOR|EMPLOYEE";
     public static final String STUDENT_NUMBER_REGEX = "[0-9]{5}";
+    public static final String PUBLIC_VISIBILITY_REGEX = "PUBLIC";
 
     private RegexExp() {
     }
