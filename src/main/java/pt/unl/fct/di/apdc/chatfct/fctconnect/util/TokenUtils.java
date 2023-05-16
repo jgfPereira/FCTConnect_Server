@@ -8,6 +8,7 @@ import pt.unl.fct.di.apdc.chatfct.fctconnect.resources.TokenRevocationListResour
 
 import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -56,6 +57,10 @@ public final class TokenUtils {
             throw new JwtException("Token is revoked");
         }
         return new TokenInfo(tokenID, subject, role);
+    }
+
+    public static Response revokeToken(final String tokenID) {
+        return TOKEN_REVOCATION_LIST.revokeToken(tokenID);
     }
 
     public static String extractTokenFromHeaders(HttpServletRequest request) {
