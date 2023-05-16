@@ -1,11 +1,13 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.Entity;
 
 import java.time.ZoneId;
 import java.util.Date;
 
 public class UserInfo {
+    private static final String NULL_VALUE = "null";
     private static final String DEFAULT_TIME_ZONE = "UTC";
     private final String username;
     private final String birthDate;
@@ -22,17 +24,17 @@ public class UserInfo {
 
     protected UserInfo(Entity user) {
         this.username = user.getKey().getName();
-        this.birthDate = dateToString(user.getTimestamp(DatastoreTypes.BIRTH_DATE_ATTR).toDate());
+        this.birthDate = handleNullDate(user.getTimestamp(DatastoreTypes.BIRTH_DATE_ATTR));
         this.creationDate = dateToString(user.getTimestamp(DatastoreTypes.CREATION_DATE_ATTR).toDate());
         this.email = user.getString(DatastoreTypes.EMAIL_ATTR);
-        this.locale = user.getString(DatastoreTypes.LOCALE_ATTR);
+        this.locale = handleNull(user.getString(DatastoreTypes.LOCALE_ATTR));
         this.name = user.getString(DatastoreTypes.NAME_ATTR);
-        this.nif = user.getString(DatastoreTypes.NIF_ATTR);
-        this.phoneNum = user.getString(DatastoreTypes.PHONE_NUM_ATTR);
+        this.nif = handleNull(user.getString(DatastoreTypes.NIF_ATTR));
+        this.phoneNum = handleNull(user.getString(DatastoreTypes.PHONE_NUM_ATTR));
         this.role = DatastoreTypes.formatRoleType(user.getString(DatastoreTypes.ROLE_ATTR));
-        this.street = user.getString(DatastoreTypes.STREET_ATTR);
+        this.street = handleNull(user.getString(DatastoreTypes.STREET_ATTR));
         this.visibility = user.getString(DatastoreTypes.VISIBILITY_ATTR);
-        this.zipCode = user.getString(DatastoreTypes.ZIP_CODE_ATTR);
+        this.zipCode = handleNull(user.getString(DatastoreTypes.ZIP_CODE_ATTR));
     }
 
     public static UserInfo createUserInfo(Entity user) {
@@ -42,6 +44,14 @@ public class UserInfo {
     private static String dateToString(Date date) {
         return date.toInstant().atZone(ZoneId.of(DEFAULT_TIME_ZONE))
                 .toLocalDateTime().format(LocalDateTimeAdapter.FORMATTER);
+    }
+
+    public static String handleNull(String str) {
+        return str == null ? NULL_VALUE : str;
+    }
+
+    private String handleNullDate(Timestamp timestamp) {
+        return timestamp == null ? NULL_VALUE : dateToString(timestamp.toDate());
     }
 
     @Override

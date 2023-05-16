@@ -6,7 +6,7 @@ import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.POST;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -27,7 +27,7 @@ public class GetUserInfoResource {
     public GetUserInfoResource() {
     }
 
-    @POST
+    @GET
     public Response doGetUserInfo(@Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("User attempt to get profile info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
@@ -47,18 +47,19 @@ public class GetUserInfoResource {
                 txn.rollback();
                 return checkUserOnDB;
             }
-            LOG.fine("User info fetched");
+            Response resp;
             if (role.matches(RegexExp.ROLE_OTHER_REGEX)) {
-                txn.commit();
                 final UserInfo userInfo = UserInfo.createUserInfo(userOnDB);
-                return Response.ok(gson.toJson(userInfo)).build();
+                resp = Response.ok(gson.toJson(userInfo)).build();
             } else {
                 final Key studentUserKey = getStudentUserKey(username);
                 final Entity studentOnDB = txn.get(studentUserKey);
-                txn.commit();
                 final UserInfoStudent userInfoStudent = UserInfoStudent.createUserInfoStudent(userOnDB, studentOnDB);
-                return Response.ok(gson.toJson(userInfoStudent)).build();
+                resp = Response.ok(gson.toJson(userInfoStudent)).build();
             }
+            txn.commit();
+            LOG.fine("User info fetched");
+            return resp;
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());

@@ -8,7 +8,7 @@ public class UserInfoStudent extends UserInfo {
 
     private UserInfoStudent(Entity user, Entity student) {
         super(user);
-        this.studentNumber = student.getString(DatastoreTypes.STUDENT_NUM_ATTR);
+        this.studentNumber = handleNull(student.getString(DatastoreTypes.STUDENT_NUM_ATTR));
     }
 
     public static UserInfoStudent createUserInfoStudent(Entity user, Entity student) {
