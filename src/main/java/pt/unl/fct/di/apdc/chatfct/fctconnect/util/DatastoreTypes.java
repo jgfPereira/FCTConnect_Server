@@ -9,6 +9,7 @@ public final class DatastoreTypes {
     public static final String LOGIN_REGISTRY_TYPE = "LoginRegistry";
     public static final String LOGIN_LOG_TYPE = "LoginLog";
     public static final String SECRET_KEY_TYPE = "SecretKey";
+    public static final String TOKEN_REVOKED_TYPE = "TokenRevoked";
     public static final String LOGIN_REGISTRY_KEY = "loginReg";
     public static final String SECRET_KEY_KEY = "secretKey";
     public static final String EMAIL_ATTR = "email";
@@ -40,6 +41,7 @@ public final class DatastoreTypes {
     public static final String AES_KEY_ATTR = "aesKey";
     public static final String INIT_VECTOR_ATTR = "initVector";
     public static final String DEFAULT_VISIBILITY = "PUBLIC";
+    public static final String TOKEN_REVOCATION_DATE_ATTR = "revocationDate";
 
     private DatastoreTypes() {
     }

@@ -2,12 +2,18 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public class TokenInfo {
 
+    private final String tokenID;
     private final String username;
     private final String role;
 
-    public TokenInfo(String username, String role) {
+    public TokenInfo(String tokenID, String username, String role) {
+        this.tokenID = tokenID;
         this.username = username;
         this.role = role;
+    }
+
+    public String getTokenID() {
+        return tokenID;
     }
 
     public String getUsername() {
@@ -21,7 +27,8 @@ public class TokenInfo {
     @Override
     public String toString() {
         return "TokenInfo{" +
-                "username='" + username + '\'' +
+                "tokenID='" + tokenID + '\'' +
+                ", username='" + username + '\'' +
                 ", role='" + role + '\'' +
                 '}';
     }
