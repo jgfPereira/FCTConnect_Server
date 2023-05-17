@@ -10,6 +10,7 @@ public final class DatastoreTypes {
     public static final String LOGIN_LOG_TYPE = "LoginLog";
     public static final String SECRET_KEY_TYPE = "SecretKey";
     public static final String TOKEN_REVOKED_TYPE = "TokenRevoked";
+    public static final String BACK_OFFICE_USER_TYPE = "BackOfficeUser";
     public static final String LOGIN_REGISTRY_KEY = "loginReg";
     public static final String SECRET_KEY_KEY = "secretKey";
     public static final String EMAIL_ATTR = "email";

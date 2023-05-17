@@ -5,7 +5,6 @@ import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 public class CleanupRevokedTokensServlet extends HttpServlet {
 
