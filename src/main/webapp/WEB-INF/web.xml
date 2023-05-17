@@ -62,6 +62,7 @@
             <role-name>admin</role-name>
         </auth-constraint>
     </security-constraint>
+
     <servlet>
         <servlet-name>servlet-storage</servlet-name>
         <servlet-class>pt.unl.fct.di.apdc.chatfct.fctconnect.servlets.MediaResourceServlet</servlet-class>
@@ -69,5 +70,14 @@
     <servlet-mapping>
         <servlet-name>servlet-storage</servlet-name>
         <url-pattern>/gcs/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>servlet-cleanupRevokedTokens</servlet-name>
+        <servlet-class>pt.unl.fct.di.apdc.chatfct.fctconnect.servlets.CleanupRevokedTokensServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>servlet-cleanupRevokedTokens</servlet-name>
+        <url-pattern>/jobs/cleanupevokedtokens</url-pattern>
     </servlet-mapping>
 </web-app>

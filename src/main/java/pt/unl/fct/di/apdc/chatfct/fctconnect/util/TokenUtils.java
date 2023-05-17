@@ -63,6 +63,10 @@ public final class TokenUtils {
         return TOKEN_REVOCATION_LIST.revokeToken(tokenID);
     }
 
+    public static void cleanupRevokedTokens() {
+        TOKEN_REVOCATION_LIST.cleanupRevokedTokens();
+    }
+
     public static String extractTokenFromHeaders(HttpServletRequest request) {
         return request.getHeader(AUTH_HEADER).split(TOKEN_DELIMITER)[1];
     }

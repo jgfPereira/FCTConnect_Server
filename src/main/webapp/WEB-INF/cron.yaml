@@ -1,0 +1,5 @@
+cron:
+  - description: Revoked Tokens Cleanup
+    url: /jobs/cleanupevokedtokens
+    schedule: every 5 minutes
+    timezone: UTC
