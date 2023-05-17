@@ -1,5 +1,6 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
+import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class UpdateResource {
 
+    private static final String START_OF_DAY_UTC = "T00:00:00Z";
     private static final Logger LOG = Logger.getLogger(UpdateResource.class.getName());
     private static final String SEPARATOR = " ";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -106,8 +108,8 @@ public class UpdateResource {
                 LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
                 invalidFormatUpdates.add(entry.propertyName);
             } else {
+                updateProperty(eb, entry.propertyName, entry.newValue);
                 LOG.fine("Updated property " + entry.propertyName);
-                eb.set(entry.propertyName, entry.newValue);
             }
         }
         return eb.build();
@@ -170,6 +172,23 @@ public class UpdateResource {
     private void appendPropertiesNotUpdated(StringBuilder sb, List<String> list) {
         for (String s : list) {
             sb.append(SEPARATOR).append(s);
+        }
+    }
+
+    private boolean isBirthDateProperty(String property) {
+        return property.equals(DatastoreTypes.BIRTH_DATE_ATTR);
+    }
+
+    private void updateBirthDate(Entity.Builder eb, String birthDate) {
+        final String birthDateWithTime = birthDate + START_OF_DAY_UTC;
+        eb.set(DatastoreTypes.BIRTH_DATE_ATTR, Timestamp.parseTimestamp(birthDateWithTime));
+    }
+
+    private void updateProperty(Entity.Builder eb, String propertyName, String newValue) {
+        if (isBirthDateProperty(propertyName)) {
+            updateBirthDate(eb, newValue);
+        } else {
+            eb.set(propertyName, newValue);
         }
     }
 
