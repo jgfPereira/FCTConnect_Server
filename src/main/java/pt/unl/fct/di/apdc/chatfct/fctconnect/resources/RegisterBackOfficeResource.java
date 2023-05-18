@@ -18,16 +18,16 @@ import java.util.logging.Logger;
 
 @Path("/backoffice/register")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class RegisterBackOfficeUserResource {
+public class RegisterBackOfficeResource {
 
     private static final String EMAIL_DELIMITER = "@";
-    private static final Logger LOG = Logger.getLogger(RegisterBackOfficeUserResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(RegisterBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final Gson gson = new Gson();
 
-    public RegisterBackOfficeUserResource() {
+    public RegisterBackOfficeResource() {
     }
 
     @POST
