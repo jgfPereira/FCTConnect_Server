@@ -58,8 +58,9 @@ public class RegisterResource {
             Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
             txn.commit();
+            final String token = createToken(username, userOnDB);
             LOG.fine("Register done: " + username);
-            return Response.ok(gson.toJson("Register done")).build();
+            return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -130,6 +131,11 @@ public class RegisterResource {
                 .setNull(DatastoreTypes.ZIP_CODE_ATTR)
                 .setNull(DatastoreTypes.PHOTO_ATTR);
         return eb.build();
+    }
+
+    private String createToken(String username, Entity user) {
+        final String role = user.getString(DatastoreTypes.ROLE_ATTR);
+        return TokenUtils.createToken(username, role);
     }
 
     @POST

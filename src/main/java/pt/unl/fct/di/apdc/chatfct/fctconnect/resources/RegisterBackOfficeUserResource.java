@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeRegisterData;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -54,8 +55,9 @@ public class RegisterBackOfficeUserResource {
             Entity backOfficeUser = createBackOfficeUser(data, key);
             txn.put(backOfficeUser);
             txn.commit();
+            final String token = createToken(username, backOfficeUserOnDB);
             LOG.fine("Back office register done: " + username);
-            return Response.ok(gson.toJson("Register done")).build();
+            return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -134,5 +136,10 @@ public class RegisterBackOfficeUserResource {
                 .set(DatastoreTypes.CREATION_DATE_ATTR, Timestamp.now())
                 .set(DatastoreTypes.ROLE_ATTR, data.role)
                 .build();
+    }
+
+    private String createToken(String username, Entity user) {
+        final String role = user.getString(DatastoreTypes.ROLE_ATTR);
+        return TokenUtils.createToken(username, role);
     }
 }
