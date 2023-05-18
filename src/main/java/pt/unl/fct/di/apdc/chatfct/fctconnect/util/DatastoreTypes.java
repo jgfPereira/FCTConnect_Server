@@ -43,6 +43,8 @@ public final class DatastoreTypes {
     public static final String INIT_VECTOR_ATTR = "initVector";
     public static final String DEFAULT_VISIBILITY = "PUBLIC";
     public static final String TOKEN_REVOCATION_DATE_ATTR = "revocationDate";
+    public static final String STATE_ATTR = "state";
+    public static final String DEFAULT_STATE = "UNAPPROVED";
 
     private DatastoreTypes() {
     }

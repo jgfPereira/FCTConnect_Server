@@ -135,6 +135,7 @@ public class RegisterBackOfficeUserResource {
                 .set(DatastoreTypes.PASSWORD_ATTR, PasswordUtils.hashPass(data.password))
                 .set(DatastoreTypes.CREATION_DATE_ATTR, Timestamp.now())
                 .set(DatastoreTypes.ROLE_ATTR, data.role)
+                .set(DatastoreTypes.STATE_ATTR, DatastoreTypes.DEFAULT_STATE)
                 .build();
     }
 
