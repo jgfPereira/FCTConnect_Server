@@ -38,17 +38,21 @@ public class LoginBackOfficeResource {
         if (checkData != null) {
             return checkData;
         }
-        final Response checkAccountState = BackOfficeStateChecker.checkAccountState(data.username);
-        if (!isResponseOK(checkAccountState)) {
-            LOG.fine(checkAccountState.readEntity(String.class));
-            return checkAccountState;
-        }
         Key key = backOfficeUserKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(key);
+            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(userOnDB);
+            if (checkBackOfficeUserOnDB != null) {
+                txn.rollback();
+                return checkBackOfficeUserOnDB;
+            }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
+                final Response checkAccountState = BackOfficeStateChecker.checkAccountState(data.username);
+                if (!isResponseOK(checkAccountState)) {
+                    return checkAccountState;
+                }
                 final String token = createToken(data.username, userOnDB);
                 txn.commit();
                 LOG.fine("Correct password - generated token");
@@ -76,6 +80,14 @@ public class LoginBackOfficeResource {
             LOG.fine("Invalid data: at least one required field is null");
         }
         return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+    }
+
+    private Response checkBackOfficeUserOnDB(Entity user) {
+        if (user == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not found - user does not exist")).build();
+        }
+        return null;
     }
 
     private boolean isResponseOK(Response r) {

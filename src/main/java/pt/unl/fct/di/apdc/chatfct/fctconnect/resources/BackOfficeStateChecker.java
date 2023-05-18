@@ -28,11 +28,6 @@ public class BackOfficeStateChecker {
         Transaction txn = datastore.newTransaction();
         try {
             Entity backOfficeUserOnDB = txn.get(key);
-            final Response checkBackOfficeUserOnDB = checkUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
-            }
             final boolean isApproved = isApproved(backOfficeUserOnDB);
             if (!isApproved) {
                 txn.rollback();
@@ -52,14 +47,6 @@ public class BackOfficeStateChecker {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
         }
-    }
-
-    private Response checkUserOnDB(Entity user) {
-        if (user == null) {
-            LOG.fine("User does not exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not found - user does not exist")).build();
-        }
-        return null;
     }
 
     private boolean isApproved(Entity user) {
