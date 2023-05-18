@@ -54,8 +54,8 @@ public class RegisterBackOfficeUserResource {
             }
             Entity backOfficeUser = createBackOfficeUser(data, key);
             txn.put(backOfficeUser);
+            final String token = createToken(username, backOfficeUser);
             txn.commit();
-            final String token = createToken(username, backOfficeUserOnDB);
             LOG.fine("Back office register done: " + username);
             return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
         } catch (Exception e) {

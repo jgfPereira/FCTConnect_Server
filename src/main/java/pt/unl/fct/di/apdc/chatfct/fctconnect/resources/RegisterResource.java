@@ -57,8 +57,8 @@ public class RegisterResource {
             txn.put(user);
             Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
+            final String token = createToken(username, user);
             txn.commit();
-            final String token = createToken(username, userOnDB);
             LOG.fine("Register done: " + username);
             return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
         } catch (Exception e) {
