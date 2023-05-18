@@ -147,7 +147,7 @@ public class UpdateResource {
             return Response.ok(gson.toJson("Updated all properties")).build();
         } else if (forbiddenUpdates.size() + invalidFormatUpdates.size() == data.updateEntries.length) {
             LOG.info("None of the properties were updated");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates))).build();
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson(createResponseString("None of the properties were updated:", forbiddenUpdates, invalidFormatUpdates))).build();
         } else {
             LOG.info("Some properties were not updated");
             return Response.ok(gson.toJson(createResponseString("Some properties were not updated:", forbiddenUpdates, invalidFormatUpdates))).build();

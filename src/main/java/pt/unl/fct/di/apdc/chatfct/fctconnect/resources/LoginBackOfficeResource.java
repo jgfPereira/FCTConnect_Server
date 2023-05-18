@@ -51,6 +51,7 @@ public class LoginBackOfficeResource {
             if (checkPassword) {
                 final Response checkAccountState = BackOfficeStateChecker.checkAccountState(data.username);
                 if (!isResponseOK(checkAccountState)) {
+                    txn.rollback();
                     return checkAccountState;
                 }
                 final String token = createToken(data.username, userOnDB);

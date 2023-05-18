@@ -2,12 +2,22 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RegexExp;
+import io.jsonwebtoken.JwtException;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
+@Path("/backoffice/approve")
+@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class BackOfficeStateChecker {
 
     private static final Logger LOG = Logger.getLogger(BackOfficeStateChecker.class.getName());
@@ -52,5 +62,103 @@ public class BackOfficeStateChecker {
     private boolean isApproved(Entity user) {
         final String state = user.getString(DatastoreTypes.STATE_ATTR);
         return state.equals(RegexExp.APPROVED_STATE_REGEX);
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doApproveBackOfficeUser(ApproveBackOfficeUserData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Attempt to approve back office user account");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String role = tokenInfo.getRole();
+        final Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key usernameKey = backOfficeUserKeyFactory.newKey(username);
+        Key otherKey = backOfficeUserKeyFactory.newKey(data.username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity usernameOnDB = txn.get(usernameKey);
+            Entity otherOnDB = txn.get(otherKey);
+            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
+            if (checkUsersOnDB != null) {
+                txn.rollback();
+                return checkUsersOnDB;
+            }
+            final Response canApproveAccount = canApproveAccount(role);
+            if (canApproveAccount != null) {
+                txn.rollback();
+                return canApproveAccount;
+            }
+            final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
+            if (!isResponseOK(checkAccountState)) {
+                txn.rollback();
+                return checkAccountState;
+            }
+            Entity userChanged = approveAccount(otherOnDB);
+            txn.update(userChanged);
+            txn.commit();
+            LOG.fine("Account has been successfully approved");
+            return Response.ok(gson.toJson("Account has been successfully approved")).build();
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
+
+    private Response checkData(ApproveBackOfficeUserData data) {
+        final boolean check = data != null && data.validateData();
+        if (!check) {
+            LOG.fine("Invalid data: at least one required field is null");
+        }
+        return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+    }
+
+    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
+        if (usernameOnDB == null || otherOnDB == null) {
+            LOG.fine("At least one of the users dont exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+        }
+        return null;
+    }
+
+    private boolean isResponseOK(Response r) {
+        return r.getStatus() == Response.Status.OK.getStatusCode();
+    }
+
+    private Response canApproveAccount(String role) {
+        final boolean canApproveAccount = BackOfficeRolePermissions.canApproveAccount(role);
+        if (!canApproveAccount) {
+            LOG.fine("Dont have permission to approve account");
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Dont have permission to approve account")).build();
+        }
+        return null;
+    }
+
+    private Entity approveAccount(Entity otherUser) {
+        return Entity.newBuilder(otherUser)
+                .set(DatastoreTypes.STATE_ATTR, DatastoreTypes.APPROVED_STATE)
+                .build();
+    }
+
+    private TokenInfo verifyToken(final String token) {
+        try {
+            return TokenUtils.verifyToken(token);
+        } catch (JwtException ex) {
+            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
+            return null;
+        }
     }
 }

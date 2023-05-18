@@ -45,6 +45,7 @@ public final class DatastoreTypes {
     public static final String TOKEN_REVOCATION_DATE_ATTR = "revocationDate";
     public static final String STATE_ATTR = "state";
     public static final String DEFAULT_STATE = "UNAPPROVED";
+    public static final String APPROVED_STATE = "APPROVED";
 
     private DatastoreTypes() {
     }
