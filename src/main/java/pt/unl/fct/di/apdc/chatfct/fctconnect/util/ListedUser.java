@@ -28,7 +28,7 @@ public class ListedUser {
         return new ListedUser(name, email, role, creationDate);
     }
 
-    private static String creationDateToString(Date date) {
+    protected static String creationDateToString(Date date) {
         return date.toInstant().atZone(ZoneId.of(DEFAULT_TIME_ZONE))
                 .toLocalDateTime().format(LocalDateTimeAdapter.FORMATTER);
     }
