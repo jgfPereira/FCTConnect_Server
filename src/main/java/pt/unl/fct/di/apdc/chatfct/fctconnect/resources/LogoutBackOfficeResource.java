@@ -52,5 +52,4 @@ public class LogoutBackOfficeResource {
             return null;
         }
     }
-
 }
