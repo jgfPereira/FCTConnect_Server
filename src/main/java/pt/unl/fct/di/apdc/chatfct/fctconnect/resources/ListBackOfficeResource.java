@@ -3,10 +3,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.UserInfo;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.POST;
@@ -26,7 +23,6 @@ public class ListBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(ListBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final Gson gson = new Gson();
 
@@ -97,8 +93,52 @@ public class ListBackOfficeResource {
 
     private List<UserInfo> getRegularUsersList(QueryResults<Entity> allUsers) {
         List<UserInfo> usersList = new ArrayList<>();
-        allUsers.forEachRemaining(user -> usersList.add(UserInfo.createUserInfo(user)));
+        allUsers.forEachRemaining(user -> addUserToListBasedOnRole(usersList, user));
         return usersList;
+    }
+
+    private String getRegularUserRole(Entity user) {
+        return user.getString(DatastoreTypes.ROLE_ATTR);
+    }
+
+    private String getRegularUserUsername(Entity user) {
+        return user.getKey().getName();
+    }
+
+    private Key getStudentUserKey(String username) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.STUDENT_TYPE)
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+    }
+
+    private Entity getStudentEntity(final String username) {
+        final Key studentUserKey = getStudentUserKey(username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            final Entity studentOnDB = txn.get(studentUserKey);
+            txn.commit();
+            LOG.fine("Student user fetched");
+            return studentOnDB;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return null;
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return null;
+            }
+        }
+    }
+
+    private void addUserToListBasedOnRole(List<UserInfo> usersList, Entity user) {
+        final String username = getRegularUserUsername(user);
+        final String role = getRegularUserRole(user);
+        if (role.matches(RegexExp.ROLE_OTHER_REGEX)) {
+            usersList.add(UserInfo.createUserInfo(user));
+        } else {
+            Entity studentUser = getStudentEntity(username);
+            usersList.add(UserInfoStudent.createUserInfoStudent(user, studentUser));
+        }
     }
 
     private TokenInfo verifyToken(final String token) {
