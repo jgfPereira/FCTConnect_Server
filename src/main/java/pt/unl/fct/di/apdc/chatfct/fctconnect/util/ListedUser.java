@@ -1,5 +1,6 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.ProjectionEntity;
 
 import java.time.ZoneId;
@@ -18,6 +19,13 @@ public class ListedUser {
         this.email = email;
         this.role = role;
         this.creationDate = creationDate;
+    }
+
+    protected ListedUser(Entity user) {
+        name = user.getString(DatastoreTypes.NAME_ATTR);
+        email = user.getString(DatastoreTypes.EMAIL_ATTR);
+        role = DatastoreTypes.formatRoleType(user.getString(DatastoreTypes.ROLE_ATTR));
+        creationDate = creationDateToString(user.getTimestamp(DatastoreTypes.CREATION_DATE_ATTR).toDate());
     }
 
     public static ListedUser createListedUser(ProjectionEntity entity) {

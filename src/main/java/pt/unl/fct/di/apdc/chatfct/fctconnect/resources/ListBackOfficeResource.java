@@ -97,11 +97,11 @@ public class ListBackOfficeResource {
         return usersList;
     }
 
-    private String getRegularUserRole(Entity user) {
+    private String getUserRole(Entity user) {
         return user.getString(DatastoreTypes.ROLE_ATTR);
     }
 
-    private String getRegularUserUsername(Entity user) {
+    private String getUserUsername(Entity user) {
         return user.getKey().getName();
     }
 
@@ -131,13 +131,81 @@ public class ListBackOfficeResource {
     }
 
     private void addUserToListBasedOnRole(List<UserInfo> usersList, Entity user) {
-        final String username = getRegularUserUsername(user);
-        final String role = getRegularUserRole(user);
+        final String username = getUserUsername(user);
+        final String role = getUserRole(user);
         if (role.matches(RegexExp.ROLE_OTHER_REGEX)) {
             usersList.add(UserInfo.createUserInfo(user));
         } else {
             Entity studentUser = getStudentEntity(username);
             usersList.add(UserInfoStudent.createUserInfoStudent(user, studentUser));
+        }
+    }
+
+    @POST
+    @Path("/backofficeusers")
+    public Response doListBackOfficeUsers(@Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Back office user attempt to list back office users");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String role = tokenInfo.getRole();
+        Key key = backOfficeUserKeyFactory.newKey(username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity userOnDB = txn.get(key);
+            final Response checkUserOnDB = checkUserOnDB(userOnDB);
+            if (checkUserOnDB != null) {
+                txn.rollback();
+                return checkUserOnDB;
+            }
+            final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
+            if (!isResponseOK(checkAccountState)) {
+                txn.rollback();
+                return checkAccountState;
+            }
+            Query<Entity> getBackOfficeUsersQuery = getBackOfficeUsersQuery(role);
+            QueryResults<Entity> allBackOfficeUsers = txn.run(getBackOfficeUsersQuery);
+            List<ListedBackOfficeUser> backOfficeUsersList = getBackOfficeUsersList(allBackOfficeUsers, username);
+            txn.commit();
+            LOG.fine("Back office user listing complete");
+            return Response.ok(gson.toJson(backOfficeUsersList)).build();
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
+
+    private Query<Entity> getBackOfficeUsersQuery(String role) {
+        EntityQuery.Builder eqb = Query.newEntityQueryBuilder()
+                .setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE)
+                .setOrderBy(StructuredQuery.OrderBy.asc(DatastoreTypes.NAME_ATTR));
+        if (!BackOfficeRolePermissions.canListAdmins(role)) {
+            eqb.setFilter(StructuredQuery.PropertyFilter
+                    .eq(DatastoreTypes.ROLE_ATTR, BackOfficeRolePermissions.MOD_ROLE));
+        }
+        return eqb.build();
+    }
+
+    private List<ListedBackOfficeUser> getBackOfficeUsersList(QueryResults<Entity> allBackOfficeUsers, String username) {
+        List<ListedBackOfficeUser> backOfficeUsersList = new ArrayList<>();
+        allBackOfficeUsers.forEachRemaining(user -> addBackOfficeUserToList(backOfficeUsersList, user, username));
+        return backOfficeUsersList;
+    }
+
+    private void addBackOfficeUserToList(List<ListedBackOfficeUser> backOfficeUsersList, Entity user, String username) {
+        final String listedUsername = getUserUsername(user);
+        if (!BackOfficeRolePermissions.isSelf(username, listedUsername)) {
+            backOfficeUsersList.add(ListedBackOfficeUser.createListedBackOfficeUser(user));
         }
     }
 
