@@ -12,7 +12,7 @@ public final class BackOfficeRolePermissions {
         return role.equals(ADMIN_ROLE);
     }
 
-    public static boolean canUpdate(String usernameRole, String otherRole) {
+    public static boolean canUpdateRole(String usernameRole, String otherRole) {
         return usernameRole.equals(ADMIN_ROLE) && otherRole.equals(MOD_ROLE);
     }
 }
