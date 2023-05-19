@@ -12,3 +12,8 @@ indexes:
       - name: creationDate
       - name: email
       - name: role
+
+  - kind: BackOfficeUser
+    properties:
+      - name: role
+      - name: name
