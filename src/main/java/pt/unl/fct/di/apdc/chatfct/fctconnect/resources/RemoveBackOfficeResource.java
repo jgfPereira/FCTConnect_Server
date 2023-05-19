@@ -59,15 +59,15 @@ public class RemoveBackOfficeResource {
                 txn.rollback();
                 return checkUsersOnDB;
             }
+            final Response checkRemovePermissions = checkRemoveRegularUserPermissions(usernameRole, data.removedUsername);
+            if (checkRemovePermissions != null) {
+                txn.rollback();
+                return checkRemovePermissions;
+            }
             final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
             if (!isResponseOK(checkAccountState)) {
                 txn.rollback();
                 return checkAccountState;
-            }
-            final Response checkRemovePermissions = checkRemovePermissions(usernameRole, data.removedUsername);
-            if (checkRemovePermissions != null) {
-                txn.rollback();
-                return checkRemovePermissions;
             }
             final String otherRole = getOtherRole(otherOnDB);
             Key specificUserKey = getSpecificUserKey(data.removedUsername, otherRole);
@@ -118,7 +118,7 @@ public class RemoveBackOfficeResource {
         return r.getStatus() == Response.Status.OK.getStatusCode();
     }
 
-    private Response checkRemovePermissions(String usernameRole, String removedUsername) {
+    private Response checkRemoveRegularUserPermissions(String usernameRole, String removedUsername) {
         if (!BackOfficeRolePermissions.canRemoveRegularUser(usernameRole)) {
             LOG.fine("Dont have permission to remove user " + removedUsername);
             return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove user " + removedUsername)).build();
@@ -166,5 +166,68 @@ public class RemoveBackOfficeResource {
             LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
             return null;
         }
+    }
+
+    @POST
+    @Path("/backofficeuser")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doRemoveBackOfficeUser(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Back office user attempt to remove another back office user");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String usernameRole = tokenInfo.getRole();
+        final Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key usernameKey = backOfficeUserKeyFactory.newKey(username);
+        Key otherKey = backOfficeUserKeyFactory.newKey(data.removedUsername);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity usernameOnDB = txn.get(usernameKey);
+            Entity otherOnDB = txn.get(otherKey);
+            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
+            if (checkUsersOnDB != null) {
+                txn.rollback();
+                return checkUsersOnDB;
+            }
+            final String otherRole = getOtherRole(otherOnDB);
+            final Response checkRemovePermissions = checkRemoveBackOfficeUserPermissions(data, username, usernameRole, otherRole);
+            if (checkRemovePermissions != null) {
+                txn.rollback();
+                return checkRemovePermissions;
+            }
+            final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
+            if (!isResponseOK(checkAccountState)) {
+                txn.rollback();
+                return checkAccountState;
+            }
+            txn.delete(otherKey);
+            txn.commit();
+            LOG.fine("Remove done: " + data.removedUsername);
+            return Response.ok(gson.toJson("Remove done")).build();
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
+
+    private Response checkRemoveBackOfficeUserPermissions(RemoveData data, String username, String usernameRole, String otherRole) {
+        if (!BackOfficeRolePermissions.canRemoveBackOfficeUser(data, username, usernameRole, otherRole)) {
+            LOG.fine("Dont have permission to remove back office user " + data.removedUsername);
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove back office user " + data.removedUsername)).build();
+        }
+        return null;
     }
 }

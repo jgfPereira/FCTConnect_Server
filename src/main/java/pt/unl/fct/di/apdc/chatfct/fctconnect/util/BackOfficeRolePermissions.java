@@ -19,4 +19,10 @@ public final class BackOfficeRolePermissions {
     public static boolean canRemoveRegularUser(String usernameRole) {
         return usernameRole.equals(ADMIN_ROLE);
     }
+
+    public static boolean canRemoveBackOfficeUser(RemoveData data, String username, String usernameRole, String otherRole) {
+        final boolean canRemoveSelf = data.isSameUser(username);
+        final boolean canRemoveOther = usernameRole.equals(ADMIN_ROLE) && otherRole.equals(MOD_ROLE);
+        return canRemoveSelf || canRemoveOther;
+    }
 }
