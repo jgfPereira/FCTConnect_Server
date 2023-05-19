@@ -33,4 +33,8 @@ public final class BackOfficeRolePermissions {
     public static boolean isSelf(String u1, String u2) {
         return u1.equals(u2);
     }
+
+    public static boolean canGetAdminsInfo(String role) {
+        return role.equals(ADMIN_ROLE);
+    }
 }

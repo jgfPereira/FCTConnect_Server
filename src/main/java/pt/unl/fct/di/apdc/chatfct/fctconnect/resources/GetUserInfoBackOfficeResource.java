@@ -30,6 +30,7 @@ public class GetUserInfoBackOfficeResource {
     }
 
     @POST
+    @Path("/regularuser")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doGetRegularUserInfo(GetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get regular user info");
@@ -113,6 +114,62 @@ public class GetUserInfoBackOfficeResource {
     private Key getStudentUserKey(String username) {
         return datastore.newKeyFactory().setKind(DatastoreTypes.STUDENT_TYPE)
                 .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+    }
+
+    @POST
+    @Path("/backofficeuser")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doGetBackOfficeUserInfo(GetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Back office user attempt to get another back office user info");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String role = tokenInfo.getRole();
+        final Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key usernameKey = backOfficeUserKeyFactory.newKey(username);
+        Key otherKey = backOfficeUserKeyFactory.newKey(data.username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity usernameOnDB = txn.get(usernameKey);
+            Entity otherOnDB = txn.get(otherKey);
+            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
+            if (checkUsersOnDB != null) {
+                txn.rollback();
+                return checkUsersOnDB;
+            }
+            final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
+            if (!isResponseOK(checkAccountState)) {
+                txn.rollback();
+                return checkAccountState;
+            }
+            Response resp;
+            final String otherRole = getUserRole(otherOnDB);
+            if (otherRole.equals(BackOfficeRolePermissions.ADMIN_ROLE) && !BackOfficeRolePermissions.canGetAdminsInfo(role)) {
+                resp = Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Dont have permission to fetch this user info")).build();
+            } else {
+                final ListedBackOfficeUser listedUser = ListedBackOfficeUser.createListedBackOfficeUser(otherOnDB);
+                resp = Response.ok(gson.toJson(listedUser)).build();
+            }
+            txn.commit();
+            LOG.fine("Back office user info fetched");
+            return resp;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
     }
 
     private TokenInfo verifyToken(final String token) {
