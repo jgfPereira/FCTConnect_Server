@@ -16,22 +16,22 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/newpass")
+@Path("/backoffice/newpass")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class NewPasswordResource {
+public class NewPasswordBackOfficeResource {
 
-    private static final Logger LOG = Logger.getLogger(NewPasswordResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(NewPasswordBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final Gson gson = new Gson();
 
-    public NewPasswordResource() {
+    public NewPasswordBackOfficeResource() {
     }
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doNewPassword(NewPasswordData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to change password");
+        LOG.fine("Attempt to update name of back office user");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
@@ -43,7 +43,7 @@ public class NewPasswordResource {
         if (checkData != null) {
             return checkData;
         }
-        Key key = userKeyFactory.newKey(username);
+        Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB = txn.get(key);
@@ -51,6 +51,11 @@ public class NewPasswordResource {
             if (checkUserOnDB != null) {
                 txn.rollback();
                 return checkUserOnDB;
+            }
+            final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
+            if (!isResponseOK(checkAccountState)) {
+                txn.rollback();
+                return checkAccountState;
             }
             final Response checkPassword = checkPassword(userOnDB, data);
             if (checkPassword != null) {
@@ -74,15 +79,6 @@ public class NewPasswordResource {
         }
     }
 
-    private TokenInfo verifyToken(final String token) {
-        try {
-            return TokenUtils.verifyToken(token);
-        } catch (JwtException ex) {
-            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
-            return null;
-        }
-    }
-
     private Response checkData(NewPasswordData data) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one required field is null");
@@ -97,6 +93,10 @@ public class NewPasswordResource {
             return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - username is not recognized")).build();
         }
         return null;
+    }
+
+    private boolean isResponseOK(Response r) {
+        return r.getStatus() == Response.Status.OK.getStatusCode();
     }
 
     private Response checkPassword(Entity userOnDB, NewPasswordData data) {
@@ -123,5 +123,14 @@ public class NewPasswordResource {
         return Entity.newBuilder(user)
                 .set(DatastoreTypes.PASSWORD_ATTR, hashedPassword)
                 .build();
+    }
+
+    private TokenInfo verifyToken(final String token) {
+        try {
+            return TokenUtils.verifyToken(token);
+        } catch (JwtException ex) {
+            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
+            return null;
+        }
     }
 }
