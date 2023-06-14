@@ -1,10 +1,10 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
-public class GetUserInfoData {
+public class BackOfficeGetUserInfoData {
 
     public String username;
 
-    public GetUserInfoData() {
+    public BackOfficeGetUserInfoData() {
     }
 
     public boolean validateData() {

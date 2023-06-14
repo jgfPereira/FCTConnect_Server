@@ -32,7 +32,7 @@ public class GetUserInfoBackOfficeResource {
     @POST
     @Path("/regularuser")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doGetRegularUserInfo(GetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doGetRegularUserInfo(BackOfficeGetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get regular user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -87,7 +87,7 @@ public class GetUserInfoBackOfficeResource {
         }
     }
 
-    private Response checkData(GetUserInfoData data) {
+    private Response checkData(BackOfficeGetUserInfoData data) {
         final boolean check = data != null && data.validateData();
         if (!check) {
             LOG.fine("Invalid data: at least one required field is null");
@@ -119,7 +119,7 @@ public class GetUserInfoBackOfficeResource {
     @POST
     @Path("/backofficeuser")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doGetBackOfficeUserInfo(GetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doGetBackOfficeUserInfo(BackOfficeGetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get another back office user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);

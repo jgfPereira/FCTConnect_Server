@@ -50,20 +50,18 @@ public class UpdateResource {
         }
         data.removeDuplicates();
         data.formatVisibilityProperty();
-        Key usernameKey = userKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.updatedUsername);
+        Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
+            Entity userOnDB = txn.get(key);
+            final Response checkUserOnDB = checkUserOnDB(userOnDB);
+            if (checkUserOnDB != null) {
                 txn.rollback();
-                return checkUsersOnDB;
+                return checkUserOnDB;
             }
             final List<String> forbiddenUpdates = new ArrayList<>();
             final List<String> invalidFormatUpdates = new ArrayList<>();
-            Entity updatedUser = updateUser(otherOnDB, data, username, forbiddenUpdates, invalidFormatUpdates);
+            Entity updatedUser = updateUser(userOnDB, data, forbiddenUpdates, invalidFormatUpdates);
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
                 txn.update(updatedUser);
             }
@@ -90,18 +88,18 @@ public class UpdateResource {
         return null;
     }
 
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+    private Response checkUserOnDB(Entity usernameOnDB) {
+        if (usernameOnDB == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - User does not exist")).build();
         }
         return null;
     }
 
-    private Entity updateUser(Entity e, UpdateData data, String username, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+    private Entity updateUser(Entity e, UpdateData data, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(e);
         for (UpdateEntry entry : data.updateEntries) {
-            if (!RolePermissions.canUpdate(data, username, entry.propertyName)) {
+            if (!RolePermissions.canUpdate(entry.propertyName)) {
                 LOG.fine("Dont have permission to update property " + entry.propertyName);
                 forbiddenUpdates.add(entry.propertyName);
             } else if (!checkPropertyFormat(entry.propertyName, entry.newValue)) {

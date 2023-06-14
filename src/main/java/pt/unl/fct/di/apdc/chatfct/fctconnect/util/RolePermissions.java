@@ -9,16 +9,10 @@ public final class RolePermissions {
     private RolePermissions() {
     }
 
-    public static boolean canUpdate(UpdateData data, String username, String propertyName) {
-        final boolean isPropertyUpdatable = !(propertyName.equals(DatastoreTypes.CREATION_DATE_ATTR)
+    public static boolean canUpdate(String propertyName) {
+        return !(propertyName.equals(DatastoreTypes.CREATION_DATE_ATTR)
                 || propertyName.equals(DatastoreTypes.PASSWORD_ATTR)
                 || propertyName.equals(DatastoreTypes.ROLE_ATTR)
-                || propertyName.equals(DatastoreTypes.EMAIL_ATTR)
-                || propertyName.equals(DatastoreTypes.STUDENT_NUM_ATTR));
-        return isPropertyUpdatable && data.isSameUser(username);
-    }
-
-    public static boolean canRemove(RemoveData data, String username) {
-        return data.isSameUser(username);
+                || propertyName.equals(DatastoreTypes.EMAIL_ATTR));
     }
 }

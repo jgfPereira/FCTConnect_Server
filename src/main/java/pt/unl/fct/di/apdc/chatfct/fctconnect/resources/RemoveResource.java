@@ -3,11 +3,12 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -30,9 +31,8 @@ public class RemoveResource {
     public RemoveResource() {
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRemove(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    @DELETE
+    public Response doRemove(@Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("User attempt to remove user");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -41,42 +41,31 @@ public class RemoveResource {
         }
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
-        final String usernameRole = tokenInfo.getRole();
-        final Response checkData = checkData(data);
-        if (checkData != null) {
-            return checkData;
-        }
-        Key usernameKey = userKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.removedUsername);
+        final String role = tokenInfo.getRole();
+        Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
+            Entity user = txn.get(key);
+            final Response checkUserOnDB = checkUserOnDB(user);
+            if (checkUserOnDB != null) {
                 txn.rollback();
-                return checkUsersOnDB;
+                return checkUserOnDB;
             }
-            final Response checkRemovePermissions = checkRemovePermissions(data, username);
-            if (checkRemovePermissions != null) {
-                txn.rollback();
-                return checkRemovePermissions;
-            }
-            Key specificUserKey = getSpecificUserKey(data.removedUsername, usernameRole);
+            Key specificUserKey = getSpecificUserKey(username, role);
             txn.delete(specificUserKey);
-            Key loginRegistryKey = getLoginRegistryKey(data.removedUsername);
+            Key loginRegistryKey = getLoginRegistryKey(username);
             Entity loginRegistry = txn.get(loginRegistryKey);
             final boolean isLoginRegistryOnDB = checkLoginRegistryOnDB(loginRegistry);
             if (isLoginRegistryOnDB) {
                 txn.delete(loginRegistryKey);
-                Query<Entity> loginLogsQuery = getLoginLogsQuery(otherKey);
+                Query<Entity> loginLogsQuery = getLoginLogsQuery(key);
                 QueryResults<Entity> loginLogs = txn.run(loginLogsQuery);
                 Key[] keysToRemove = removeLoginLogs(loginLogs);
                 txn.delete(keysToRemove);
             }
-            txn.delete(otherKey);
+            txn.delete(key);
             txn.commit();
-            LOG.fine("Remove done: " + data.removedUsername);
+            LOG.fine("Remove done: " + username);
             return Response.ok(gson.toJson("Remove done")).build();
         } catch (Exception e) {
             txn.rollback();
@@ -99,26 +88,10 @@ public class RemoveResource {
         }
     }
 
-    private Response checkData(RemoveData data) {
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
-        }
-        return null;
-    }
-
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
-        }
-        return null;
-    }
-
-    private Response checkRemovePermissions(RemoveData data, String username) {
-        if (!RolePermissions.canRemove(data, username)) {
-            LOG.fine("Dont have permission to remove user " + data.removedUsername);
-            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove user " + data.removedUsername)).build();
+    private Response checkUserOnDB(Entity usernameOnDB) {
+        if (usernameOnDB == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - User does not exist")).build();
         }
         return null;
     }
