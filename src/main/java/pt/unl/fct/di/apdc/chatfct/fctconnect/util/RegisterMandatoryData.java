@@ -9,7 +9,6 @@ public class RegisterMandatoryData {
     public String passConf;
     public String name;
     public String role;
-    public String studentNumber;
 
     public RegisterMandatoryData() {
     }
@@ -34,14 +33,5 @@ public class RegisterMandatoryData {
     public boolean validateRole() {
         this.role = this.role.toUpperCase().trim();
         return this.role.matches(RegexExp.ROLE_REGEX);
-    }
-
-    public boolean isStudent() {
-        this.role = this.role.toUpperCase().trim();
-        return role.equals(RegexExp.ROLE_STUDENT_REGEX);
-    }
-
-    public boolean validateStudentNumber() {
-        return studentNumber != null && studentNumber.matches(RegexExp.STUDENT_NUMBER_REGEX);
     }
 }

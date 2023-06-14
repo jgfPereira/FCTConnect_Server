@@ -3,7 +3,6 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 public final class RegexExp {
 
     public static final String ZIP_CODE_REGEX = "[0-9]{4}-[0-9]{3}";
-    public static final String NIF_REGEX = "[0-9]{9}";
     /*
     country code: 1-3 digits
     national number: 9-10 digits
@@ -24,6 +23,7 @@ public final class RegexExp {
     public static final String PUBLIC_VISIBILITY_REGEX = "PUBLIC";
     public static final String BACK_OFFICE_ROLE_REGEX = "ADMIN|MOD";
     public static final String APPROVED_STATE_REGEX = "APPROVED";
+    public static final String ROLE_PROFESSOR_REGEX = "PROFESSOR";
 
     private RegexExp() {
     }

@@ -15,7 +15,6 @@ public class UserInfo {
     private final String email;
     private final String locale;
     private final String name;
-    private final String nif;
     private final String phoneNum;
     private final String role;
     private final String street;
@@ -29,7 +28,6 @@ public class UserInfo {
         this.email = user.getString(DatastoreTypes.EMAIL_ATTR);
         this.locale = handleNull(user.getString(DatastoreTypes.LOCALE_ATTR));
         this.name = user.getString(DatastoreTypes.NAME_ATTR);
-        this.nif = handleNull(user.getString(DatastoreTypes.NIF_ATTR));
         this.phoneNum = handleNull(user.getString(DatastoreTypes.PHONE_NUM_ATTR));
         this.role = DatastoreTypes.formatRoleType(user.getString(DatastoreTypes.ROLE_ATTR));
         this.street = handleNull(user.getString(DatastoreTypes.STREET_ATTR));
@@ -63,7 +61,6 @@ public class UserInfo {
                 ", email='" + email + '\'' +
                 ", locale='" + locale + '\'' +
                 ", name='" + name + '\'' +
-                ", nif='" + nif + '\'' +
                 ", phoneNum='" + phoneNum + '\'' +
                 ", role='" + role + '\'' +
                 ", street='" + street + '\'' +

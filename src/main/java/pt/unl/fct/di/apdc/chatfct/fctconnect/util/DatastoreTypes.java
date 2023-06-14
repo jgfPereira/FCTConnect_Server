@@ -20,7 +20,6 @@ public final class DatastoreTypes {
     public static final String ROLE_ATTR = "role";
     public static final String BIRTH_DATE_ATTR = "birthDate";
     public static final String PHONE_NUM_ATTR = "phoneNum";
-    public static final String NIF_ATTR = "nif";
     public static final String VISIBILITY_ATTR = "visibility";
     public static final String STREET_ATTR = "street";
     public static final String LOCALE_ATTR = "locale";
@@ -46,6 +45,13 @@ public final class DatastoreTypes {
     public static final String STATE_ATTR = "state";
     public static final String DEFAULT_STATE = "UNAPPROVED";
     public static final String APPROVED_STATE = "APPROVED";
+    public static final String COURSE_STUDENT_ATTR = "course";
+    public static final String YEAR_STUDENT_ATTR = "year";
+    public static final String CREDITS_STUDENT_ATTR = "credits";
+    public static final String AVERAGE_STUDENT_ATTR = "average";
+    public static final String DEPARTMENT_ATTR = "department";
+    public static final String OFFICE_PROFESSOR_ATTR = "office";
+    public static final String JOB_TITLE_EMPLOYEE_ATTR = "jobTitle";
 
     private DatastoreTypes() {
     }

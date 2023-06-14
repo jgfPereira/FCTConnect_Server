@@ -124,8 +124,6 @@ public class UpdateResource {
             case DatastoreTypes.PHOTO_ATTR:
             case DatastoreTypes.STREET_ATTR:
                 return true;
-            case DatastoreTypes.NIF_ATTR:
-                return newValue.matches(RegexExp.NIF_REGEX);
             case DatastoreTypes.PHONE_NUM_ATTR:
                 return newValue.matches(RegexExp.PHONE_NUM_REGEX);
             case DatastoreTypes.VISIBILITY_ATTR:

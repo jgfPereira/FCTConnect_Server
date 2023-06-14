@@ -55,7 +55,7 @@ public class RegisterResource {
             }
             Entity user = createUser(data, key);
             txn.put(user);
-            Entity specificUser = createSpecificUser(data, username, data.role);
+            Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
             final String token = createToken(username, user);
             txn.commit();
@@ -89,9 +89,6 @@ public class RegisterResource {
         } else if (!data.validateRole()) {
             LOG.fine("Unrecognized role");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized role")).build();
-        } else if (data.isStudent() && !data.validateStudentNumber()) {
-            LOG.fine("Student number dont meet constraints");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Student number dont meet constraints")).build();
         }
         return null;
     }
@@ -109,12 +106,26 @@ public class RegisterResource {
         return null;
     }
 
-    private Entity createSpecificUser(RegisterMandatoryData data, String username, String role) {
+    private void setEntityBuilderByType(Entity.Builder eb, String role) {
+        if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
+            eb.setNull(DatastoreTypes.COURSE_STUDENT_ATTR)
+                    .setNull(DatastoreTypes.STUDENT_NUM_ATTR)
+                    .setNull(DatastoreTypes.YEAR_STUDENT_ATTR)
+                    .setNull(DatastoreTypes.CREDITS_STUDENT_ATTR)
+                    .setNull(DatastoreTypes.AVERAGE_STUDENT_ATTR);
+        } else if (role.equals(RegexExp.ROLE_PROFESSOR_REGEX)) {
+            eb.setNull(DatastoreTypes.DEPARTMENT_ATTR)
+                    .setNull(DatastoreTypes.OFFICE_PROFESSOR_ATTR);
+        } else {
+            eb.setNull(DatastoreTypes.DEPARTMENT_ATTR)
+                    .setNull(DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR);
+        }
+    }
+
+    private Entity createSpecificUser(String username, String role) {
         final Key key = datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role)).addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
         final Entity.Builder eb = Entity.newBuilder(key);
-        if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
-            eb.set(DatastoreTypes.STUDENT_NUM_ATTR, data.studentNumber);
-        }
+        setEntityBuilderByType(eb, role);
         return eb.build();
     }
 
@@ -128,7 +139,6 @@ public class RegisterResource {
                 .set(DatastoreTypes.VISIBILITY_ATTR, DatastoreTypes.DEFAULT_VISIBILITY)
                 .setNull(DatastoreTypes.BIRTH_DATE_ATTR)
                 .setNull(DatastoreTypes.PHONE_NUM_ATTR)
-                .setNull(DatastoreTypes.NIF_ATTR)
                 .setNull(DatastoreTypes.STREET_ATTR)
                 .setNull(DatastoreTypes.LOCALE_ATTR)
                 .setNull(DatastoreTypes.ZIP_CODE_ATTR)
