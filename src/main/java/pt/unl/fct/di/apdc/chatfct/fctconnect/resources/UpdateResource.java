@@ -121,6 +121,10 @@ public class UpdateResource {
             case DatastoreTypes.NAME_ATTR:
             case DatastoreTypes.PHOTO_ATTR:
             case DatastoreTypes.STREET_ATTR:
+            case DatastoreTypes.COURSE_STUDENT_ATTR:
+            case DatastoreTypes.DEPARTMENT_ATTR:
+            case DatastoreTypes.OFFICE_PROFESSOR_ATTR:
+            case DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR:
                 return true;
             case DatastoreTypes.PHONE_NUM_ATTR:
                 return newValue.matches(RegexExp.PHONE_NUM_REGEX);
@@ -128,6 +132,13 @@ public class UpdateResource {
                 return newValue.matches(RegexExp.VISIBILITY_REGEX);
             case DatastoreTypes.ZIP_CODE_ATTR:
                 return newValue.matches(RegexExp.ZIP_CODE_REGEX);
+            case DatastoreTypes.STUDENT_NUM_ATTR:
+                return newValue.matches(RegexExp.STUDENT_NUMBER_REGEX);
+            case DatastoreTypes.YEAR_STUDENT_ATTR:
+            case DatastoreTypes.CREDITS_STUDENT_ATTR:
+                return newValue.matches(RegexExp.WHOLE_NUMBER_REGEX);
+            case DatastoreTypes.AVERAGE_STUDENT_ATTR:
+                return newValue.matches(RegexExp.REAL_NUMBER_REGEX);
             default:
                 return false;
         }
