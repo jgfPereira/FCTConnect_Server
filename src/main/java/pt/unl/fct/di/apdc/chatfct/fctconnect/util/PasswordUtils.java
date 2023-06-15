@@ -16,7 +16,6 @@ public final class PasswordUtils {
         passRules.add(new CharacterRule(EnglishCharacterData.UpperCase, 1));
         passRules.add(new CharacterRule(EnglishCharacterData.LowerCase, 1));
         passRules.add(new CharacterRule(EnglishCharacterData.Digit, 1));
-        passRules.add(new CharacterRule(EnglishCharacterData.Special, 1));
         passRules.add(new WhitespaceRule());
         passValidator = new PasswordValidator(passRules);
     }

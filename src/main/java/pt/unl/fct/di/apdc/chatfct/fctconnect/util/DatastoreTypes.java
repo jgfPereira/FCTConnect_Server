@@ -2,6 +2,9 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 public final class DatastoreTypes {
 
+    public static final String PROJECT_ID = "fctconnect23";
+    public static final String BUCKET_NAME = "fctconnect23.appspot.com";
+    public static final String PHOTO_NAME_FMT = "photo_%s";
     public static final String USER_TYPE = "User";
     public static final String STUDENT_TYPE = "Student";
     public static final String PROFESSOR_TYPE = "Professor";

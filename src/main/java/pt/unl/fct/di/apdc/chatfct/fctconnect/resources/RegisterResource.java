@@ -3,23 +3,14 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import org.apache.commons.io.FileUtils;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
-import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.IOException;
 import java.util.logging.Logger;
 
 @Path("/register")
@@ -149,31 +140,5 @@ public class RegisterResource {
     private String createToken(String username, Entity user) {
         final String role = user.getString(DatastoreTypes.ROLE_ATTR);
         return TokenUtils.createToken(username, role);
-    }
-
-    @POST
-    @Path("/addphoto")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doAddPhoto(AddPhotoData data) throws IOException {
-        String urlBucket = "https://fctconnect.oa.r.appspot.com/gcs/fctconnect.appspot.com/";
-        LOG.fine("Adding profile picture of user");
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
-        }
-        Client client = ClientBuilder.newClient(new ClientConfig());
-        WebTarget webTarget = client.target(urlBucket + data.photo);
-        File file = new File("tmp." + data.getExtension());
-        FileUtils.writeByteArrayToFile(file, data.getPhotoBinary());
-        final FileDataBodyPart filePart = new FileDataBodyPart(data.photo, file);
-        FormDataMultiPart multipart = new FormDataMultiPart();
-        multipart.bodyPart(filePart);
-        Response r = webTarget.request().accept(MediaType.APPLICATION_JSON)
-                .post(javax.ws.rs.client.Entity.entity(multipart, multipart.getMediaType()));
-        if (r.getStatus() == Response.Status.OK.getStatusCode()) {
-            return Response.ok(gson.toJson("Profile picture added")).build();
-        } else {
-            return Response.status(r.getStatus()).entity(gson.toJson("Profile picture not added")).build();
-        }
     }
 }

@@ -2,20 +2,24 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -204,6 +208,82 @@ public class UpdateResource {
             return TokenUtils.verifyToken(token);
         } catch (JwtException ex) {
             LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
+            return null;
+        }
+    }
+
+    @POST
+    @Path("/addphoto")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doAddPhoto(@Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("User attempt to update attribute(s)");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        Key key = userKeyFactory.newKey(username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity userOnDB = txn.get(key);
+            final Response checkUserOnDB = checkUserOnDB(userOnDB);
+            if (checkUserOnDB != null) {
+                txn.rollback();
+                return checkUserOnDB;
+            }
+            final Blob photo = addPhotoToStorage(request, username);
+            if (photo == null) {
+                txn.rollback();
+                LOG.severe("Error writing file to cloud storage");
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+            txn.commit();
+            LOG.fine("Profile photo added - " + photo.getName());
+            return Response.ok(gson.toJson("Profile photo added - " + photo.getName())).build();
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
+
+    private InputStream parsePhotoFromRequest(HttpServletRequest request) {
+        try {
+            ServletFileUpload upload = new ServletFileUpload(new DiskFileItemFactory());
+            List<FileItem> items = upload.parseRequest(request);
+            for (FileItem item : items) {
+                if (!item.isFormField())
+                    return item.getInputStream();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private Blob addPhotoToStorage(HttpServletRequest request, String username) {
+        final InputStream photo = parsePhotoFromRequest(request);
+        if (photo == null) {
+            return null;
+        }
+        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username);
+        final Storage storage = StorageOptions.getDefaultInstance().getService();
+        final BlobId blobId = BlobId.of(DatastoreTypes.BUCKET_NAME, photoName);
+        final BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                .setAcl(Collections.singletonList(Acl.newBuilder(Acl.User.ofAllUsers(), Acl.Role.READER).build()))
+                .setContentType(request.getContentType())
+                .build();
+        try {
+            return storage.create(blobInfo, photo.readAllBytes());
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
