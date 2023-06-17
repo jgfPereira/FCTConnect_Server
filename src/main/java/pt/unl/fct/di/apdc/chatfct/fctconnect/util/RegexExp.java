@@ -24,6 +24,7 @@ public final class RegexExp {
     public static final String BACK_OFFICE_ROLE_REGEX = "ADMIN|MOD";
     public static final String APPROVED_STATE_REGEX = "APPROVED";
     public static final String ROLE_PROFESSOR_REGEX = "PROFESSOR";
+    public static final String ROLE_EMPLOYEE_REGEX = "EMPLOYEE";
     public static final String WHOLE_NUMBER_REGEX = "^\\d+$";
     public static final String REAL_NUMBER_REGEX = "^(?:-(?:[1-9](?:\\d{0,2}(?:,\\d{3})+|\\d*))|(?:0|(?:[1-9](?:\\d{0,2}(?:,\\d{3})+|\\d*))))(?:.\\d+|)$";
 

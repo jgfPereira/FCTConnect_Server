@@ -23,13 +23,13 @@ public final class RolePermissions {
         if (studentProps && !isStudent) {
             return false;
         }
-        final boolean isProfessor = role.equals(RegexExp.ROLE_STUDENT_REGEX);
+        final boolean isProfessor = role.equals(RegexExp.ROLE_PROFESSOR_REGEX);
         final boolean professorProps = propertyName.equals(DatastoreTypes.DEPARTMENT_ATTR)
                 || propertyName.equals(DatastoreTypes.OFFICE_PROFESSOR_ATTR);
         if (professorProps && !isProfessor) {
             return false;
         }
-        final boolean isEmployee = role.equals(RegexExp.ROLE_STUDENT_REGEX);
+        final boolean isEmployee = role.equals(RegexExp.ROLE_EMPLOYEE_REGEX);
         final boolean employeeProps = propertyName.equals(DatastoreTypes.DEPARTMENT_ATTR)
                 || propertyName.equals(DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR);
         return !employeeProps || isEmployee;

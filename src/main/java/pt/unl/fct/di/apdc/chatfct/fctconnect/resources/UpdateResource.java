@@ -65,6 +65,8 @@ public class UpdateResource {
             }
             final List<String> forbiddenUpdates = new ArrayList<>();
             final List<String> invalidFormatUpdates = new ArrayList<>();
+            final Key specificUserKey = getSpecificUserKey(username, role);
+            final Entity.Builder specificUserEntityBuilder = Entity.newBuilder(txn.get(specificUserKey));
             Entity updatedUser = updateUser(userOnDB, data, role, forbiddenUpdates, invalidFormatUpdates);
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
                 txn.update(updatedUser);
@@ -100,8 +102,8 @@ public class UpdateResource {
         return null;
     }
 
-    private Entity updateUser(Entity e, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
-        Entity.Builder eb = Entity.newBuilder(e);
+    private Entity updateUser(Entity user, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+        Entity.Builder eb = Entity.newBuilder(user);
         for (UpdateEntry entry : data.updateEntries) {
             if (!RolePermissions.canUpdate(entry.propertyName, role)) {
                 LOG.fine("Dont have permission to update property " + entry.propertyName);
@@ -200,6 +202,11 @@ public class UpdateResource {
         } else {
             eb.set(propertyName, newValue);
         }
+    }
+
+    private Key getSpecificUserKey(String username, String role) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
     }
 
     private TokenInfo verifyToken(final String token) {

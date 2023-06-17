@@ -1,26 +1,20 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>Retrieve sessionStorage Value</title>
-  </head>
-  <body>
-    <h1>sessionStorage Value</h1>
-    <p id="value"></p>
+</head>
+<body>
+<h1>sessionStorage Value</h1>
+<p id="value"></p>
+<button onclick="checkSessionStorage()" type="button">Check Session Storage</button>
+<script>
+    let value = localStorage.getItem("myKey");
+    sessionStorage.setItem("myKey", value);
+    localStorage.removeItem("myKey");
 
-    <script>
-      // Set a sample value in localStorage for a specific key
-      //localStorage.setItem('myKey', 'Hello, localStorage!');
-      // Retrieve the value from localStorage
-      var value = localStorage.getItem("myKey");
-
-      // Store the value in sessionStorage
-      sessionStorage.setItem("myKey", value);
-
-      // Delete the item from localStorage
-      localStorage.removeItem("myKey");
-
-      // Display the retrieved value on the page
-      alert(value);
-    </script>
-  </body>
+    function checkSessionStorage() {
+        alert(value);
+    }
+</script>
+</body>
 </html>
