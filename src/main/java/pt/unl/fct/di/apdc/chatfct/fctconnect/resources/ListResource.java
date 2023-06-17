@@ -50,7 +50,7 @@ public class ListResource {
             }
             Query<ProjectionEntity> getUsersQuery = getUsersQuery();
             QueryResults<ProjectionEntity> allUsers = txn.run(getUsersQuery);
-            List<ListedUser> usersList = getUsersList(allUsers);
+            List<ListedUser> usersList = getUsersList(txn, allUsers);
             txn.commit();
             LOG.fine("User listing complete");
             return Response.ok(gson.toJson(usersList)).build();
@@ -93,9 +93,34 @@ public class ListResource {
                 .build();
     }
 
-    private List<ListedUser> getUsersList(QueryResults<ProjectionEntity> allUsers) {
+    private List<ListedUser> getUsersList(Transaction txn, QueryResults<ProjectionEntity> allUsers) {
         List<ListedUser> usersList = new ArrayList<>();
-        allUsers.forEachRemaining(user -> usersList.add(ListedUser.createListedUser(user)));
+        allUsers.forEachRemaining(user -> processSpecificUser(txn, usersList, user));
         return usersList;
+    }
+
+    private Key getSpecificUserKey(String username, String role) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+    }
+
+    private void processSpecificUser(Transaction txn, List<ListedUser> usersList, ProjectionEntity user) {
+        final String role = user.getString(DatastoreTypes.ROLE_ATTR);
+        final String username = user.getKey().getName();
+        final Key key = getSpecificUserKey(username, role);
+        final Entity specificUser = txn.get(key);
+        if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
+            final String course = specificUser.getString(DatastoreTypes.COURSE_STUDENT_ATTR);
+            final String year = specificUser.getString(DatastoreTypes.YEAR_STUDENT_ATTR);
+            usersList.add(ListedUserStudent.createListedUserStudent(user, course, year));
+        } else if (role.equals(RegexExp.ROLE_PROFESSOR_REGEX)) {
+            final String department = specificUser.getString(DatastoreTypes.DEPARTMENT_ATTR);
+            final String office = specificUser.getString(DatastoreTypes.OFFICE_PROFESSOR_ATTR);
+            usersList.add(ListedUserProfessor.createListedUserProfessor(user, department, office));
+        } else {
+            final String department = specificUser.getString(DatastoreTypes.DEPARTMENT_ATTR);
+            final String jobTitle = specificUser.getString(DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR);
+            usersList.add(ListedUserEmployee.createListedUserEmployee(user, department, jobTitle));
+        }
     }
 }
