@@ -20,6 +20,7 @@ public class UserInfo {
     private final String street;
     private final String visibility;
     private final String zipCode;
+    private final String photo;
 
     protected UserInfo(Entity user) {
         this.username = user.getKey().getName();
@@ -33,6 +34,7 @@ public class UserInfo {
         this.street = handleNull(user.getString(DatastoreTypes.STREET_ATTR));
         this.visibility = user.getString(DatastoreTypes.VISIBILITY_ATTR);
         this.zipCode = handleNull(user.getString(DatastoreTypes.ZIP_CODE_ATTR));
+        this.photo = handleNull(user.getString(DatastoreTypes.PHOTO_ATTR));
     }
 
     public static UserInfo createUserInfo(Entity user) {
@@ -66,6 +68,7 @@ public class UserInfo {
                 ", street='" + street + '\'' +
                 ", visibility='" + visibility + '\'' +
                 ", zipCode='" + zipCode + '\'' +
+                ", photo='" + photo + '\'' +
                 '}';
     }
 }
