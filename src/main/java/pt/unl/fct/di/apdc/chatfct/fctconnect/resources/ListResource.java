@@ -87,7 +87,7 @@ public class ListResource {
         return Query.newProjectionEntityQueryBuilder()
                 .setKind(DatastoreTypes.USER_TYPE)
                 .setProjection(DatastoreTypes.NAME_ATTR, DatastoreTypes.EMAIL_ATTR,
-                        DatastoreTypes.ROLE_ATTR, DatastoreTypes.CREATION_DATE_ATTR)
+                        DatastoreTypes.ROLE_ATTR, DatastoreTypes.CREATION_DATE_ATTR, DatastoreTypes.PHOTO_ATTR)
                 .setFilter(StructuredQuery.PropertyFilter.eq(DatastoreTypes.VISIBILITY_ATTR, RegexExp.PUBLIC_VISIBILITY_REGEX))
                 .setOrderBy(StructuredQuery.OrderBy.asc(DatastoreTypes.NAME_ATTR))
                 .build();

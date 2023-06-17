@@ -12,6 +12,7 @@ indexes:
       - name: creationDate
       - name: email
       - name: role
+      - name: photo
 
   - kind: BackOfficeUser
     properties:
