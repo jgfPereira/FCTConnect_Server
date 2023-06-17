@@ -47,6 +47,7 @@ public class UpdateResource {
         }
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
+        final String role = tokenInfo.getRole();
         final Response checkData = checkData(data);
         if (checkData != null) {
             return checkData;
@@ -64,7 +65,7 @@ public class UpdateResource {
             }
             final List<String> forbiddenUpdates = new ArrayList<>();
             final List<String> invalidFormatUpdates = new ArrayList<>();
-            Entity updatedUser = updateUser(userOnDB, data, forbiddenUpdates, invalidFormatUpdates);
+            Entity updatedUser = updateUser(userOnDB, data, role, forbiddenUpdates, invalidFormatUpdates);
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
                 txn.update(updatedUser);
             }
@@ -99,10 +100,10 @@ public class UpdateResource {
         return null;
     }
 
-    private Entity updateUser(Entity e, UpdateData data, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+    private Entity updateUser(Entity e, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(e);
         for (UpdateEntry entry : data.updateEntries) {
-            if (!RolePermissions.canUpdate(entry.propertyName)) {
+            if (!RolePermissions.canUpdate(entry.propertyName, role)) {
                 LOG.fine("Dont have permission to update property " + entry.propertyName);
                 forbiddenUpdates.add(entry.propertyName);
             } else if (!checkPropertyFormat(entry.propertyName, entry.newValue)) {
@@ -122,7 +123,6 @@ public class UpdateResource {
                 return newValue.matches(RegexExp.DATE_REGEX);
             case DatastoreTypes.LOCALE_ATTR:
             case DatastoreTypes.NAME_ATTR:
-            case DatastoreTypes.PHOTO_ATTR:
             case DatastoreTypes.STREET_ATTR:
             case DatastoreTypes.COURSE_STUDENT_ATTR:
             case DatastoreTypes.DEPARTMENT_ATTR:
