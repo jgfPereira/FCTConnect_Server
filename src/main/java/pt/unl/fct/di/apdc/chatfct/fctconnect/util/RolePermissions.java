@@ -35,7 +35,7 @@ public final class RolePermissions {
         return !employeeProps || isEmployee;
     }
 
-    public boolean isSpecificProperty(String propertyName) {
+    public static boolean isSpecificProperty(String propertyName) {
         return propertyName.equals(DatastoreTypes.COURSE_STUDENT_ATTR)
                 || propertyName.equals(DatastoreTypes.STUDENT_NUM_ATTR)
                 || propertyName.equals(DatastoreTypes.YEAR_STUDENT_ATTR)

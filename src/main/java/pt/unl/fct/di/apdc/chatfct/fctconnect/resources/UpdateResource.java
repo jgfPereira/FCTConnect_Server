@@ -67,9 +67,10 @@ public class UpdateResource {
             final List<String> invalidFormatUpdates = new ArrayList<>();
             final Key specificUserKey = getSpecificUserKey(username, role);
             final Entity.Builder specificUserEntityBuilder = Entity.newBuilder(txn.get(specificUserKey));
-            Entity updatedUser = updateUser(userOnDB, specificUserEntityBuilder, data, role, forbiddenUpdates, invalidFormatUpdates);
+            final Entity updatedUser = updateUser(userOnDB, specificUserEntityBuilder, data, role, forbiddenUpdates, invalidFormatUpdates);
+            final Entity updatedSpecificUser = specificUserEntityBuilder.build();
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
-                txn.update(updatedUser);
+                txn.update(updatedUser, updatedSpecificUser);
             }
             txn.commit();
             LOG.fine("User was updated - if permissions and format checked out");
@@ -102,7 +103,7 @@ public class UpdateResource {
         return null;
     }
 
-    private Entity updateUser(Entity user, Entity.Builder specificUserEntityBuilder, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+    private Entity updateUser(Entity user, Entity.Builder specificUserEB, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(user);
         for (UpdateEntry entry : data.updateEntries) {
             if (!RolePermissions.canUpdate(entry.propertyName, role)) {
@@ -112,7 +113,11 @@ public class UpdateResource {
                 LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
                 invalidFormatUpdates.add(entry.propertyName);
             } else {
-                updateProperty(eb, entry.propertyName, entry.newValue);
+                if (RolePermissions.isSpecificProperty(entry.propertyName)) {
+                    updateSpecificProperty(specificUserEB, entry.propertyName, entry.newValue);
+                } else {
+                    updateProperty(eb, entry.propertyName, entry.newValue);
+                }
                 LOG.fine("Updated property " + entry.propertyName);
             }
         }
@@ -202,6 +207,10 @@ public class UpdateResource {
         } else {
             eb.set(propertyName, newValue);
         }
+    }
+
+    private void updateSpecificProperty(Entity.Builder eb, String propertyName, String newValue) {
+        eb.set(propertyName, newValue);
     }
 
     private Key getSpecificUserKey(String username, String role) {
