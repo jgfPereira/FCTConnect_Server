@@ -61,17 +61,10 @@ public class GetUserInfoBackOfficeResource {
                 txn.rollback();
                 return checkAccountState;
             }
-            Response resp;
             final String otherRole = getUserRole(otherOnDB);
-            if (otherRole.matches(RegexExp.ROLE_OTHER_REGEX)) {
-                final UserInfo userInfo = UserInfo.createUserInfo(otherOnDB);
-                resp = Response.ok(gson.toJson(userInfo)).build();
-            } else {
-                final Key studentUserKey = getStudentUserKey(data.username);
-                final Entity studentOnDB = txn.get(studentUserKey);
-                final UserInfoStudent userInfoStudent = UserInfoStudent.createUserInfoStudent(otherOnDB, studentOnDB);
-                resp = Response.ok(gson.toJson(userInfoStudent)).build();
-            }
+            final Key specificUserKey = getSpecificUserKey(data.username, otherRole);
+            final Entity specificUserOnDB = txn.get(specificUserKey);
+            final Response resp = getUserInfo(otherOnDB, specificUserOnDB, otherRole);
             txn.commit();
             LOG.fine("Regular user info fetched");
             return resp;
@@ -111,9 +104,19 @@ public class GetUserInfoBackOfficeResource {
         return user.getString(DatastoreTypes.ROLE_ATTR);
     }
 
-    private Key getStudentUserKey(String username) {
-        return datastore.newKeyFactory().setKind(DatastoreTypes.STUDENT_TYPE)
+    private Key getSpecificUserKey(String username, String role) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
                 .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
+    }
+
+    private Response getUserInfo(Entity otherOnDB, Entity specificUserOnDB, String role) {
+        if (role.equals(RegexExp.ROLE_STUDENT_REGEX)) {
+            return Response.ok(gson.toJson(UserInfoStudent.createUserInfoStudent(otherOnDB, specificUserOnDB))).build();
+        } else if (role.equals(RegexExp.ROLE_PROFESSOR_REGEX)) {
+            return Response.ok(gson.toJson(UserInfoProfessor.createUserInfoProfessor(otherOnDB, specificUserOnDB))).build();
+        } else {
+            return Response.ok(gson.toJson(UserInfoEmployee.createUserInfoEmployee(otherOnDB, specificUserOnDB))).build();
+        }
     }
 
     @POST

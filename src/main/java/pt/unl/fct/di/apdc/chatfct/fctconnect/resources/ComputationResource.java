@@ -68,7 +68,7 @@ public class ComputationResource {
     @GET
     @Path("/compute")
     public Response triggerExecuteComputeTask() throws IOException {
-        String projectId = "fctconnect";
+        String projectId = "fctconnect23";
         String queueName = "default";
         String location = "europe-west6";
         LOG.log(Level.INFO, projectId + " :: " + queueName + " :: " + location);
