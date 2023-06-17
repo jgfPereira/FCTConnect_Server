@@ -67,7 +67,7 @@ public class UpdateResource {
             final List<String> invalidFormatUpdates = new ArrayList<>();
             final Key specificUserKey = getSpecificUserKey(username, role);
             final Entity.Builder specificUserEntityBuilder = Entity.newBuilder(txn.get(specificUserKey));
-            Entity updatedUser = updateUser(userOnDB, data, role, forbiddenUpdates, invalidFormatUpdates);
+            Entity updatedUser = updateUser(userOnDB, specificUserEntityBuilder, data, role, forbiddenUpdates, invalidFormatUpdates);
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
                 txn.update(updatedUser);
             }
@@ -102,7 +102,7 @@ public class UpdateResource {
         return null;
     }
 
-    private Entity updateUser(Entity user, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
+    private Entity updateUser(Entity user, Entity.Builder specificUserEntityBuilder, UpdateData data, String role, List<String> forbiddenUpdates, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(user);
         for (UpdateEntry entry : data.updateEntries) {
             if (!RolePermissions.canUpdate(entry.propertyName, role)) {

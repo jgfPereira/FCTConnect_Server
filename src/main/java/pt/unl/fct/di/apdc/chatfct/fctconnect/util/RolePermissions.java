@@ -34,4 +34,15 @@ public final class RolePermissions {
                 || propertyName.equals(DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR);
         return !employeeProps || isEmployee;
     }
+
+    public boolean isSpecificProperty(String propertyName) {
+        return propertyName.equals(DatastoreTypes.COURSE_STUDENT_ATTR)
+                || propertyName.equals(DatastoreTypes.STUDENT_NUM_ATTR)
+                || propertyName.equals(DatastoreTypes.YEAR_STUDENT_ATTR)
+                || propertyName.equals(DatastoreTypes.CREDITS_STUDENT_ATTR)
+                || propertyName.equals(DatastoreTypes.AVERAGE_STUDENT_ATTR)
+                || propertyName.equals(DatastoreTypes.DEPARTMENT_ATTR)
+                || propertyName.equals(DatastoreTypes.OFFICE_PROFESSOR_ATTR)
+                || propertyName.equals(DatastoreTypes.JOB_TITLE_EMPLOYEE_ATTR);
+    }
 }
