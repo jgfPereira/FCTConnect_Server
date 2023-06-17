@@ -238,6 +238,8 @@ public class UpdateResource {
                 LOG.severe("Error writing file to cloud storage");
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
+            final Entity updatedUser = linkPhotoWithUser(userOnDB, photo.getName());
+            txn.update(updatedUser);
             txn.commit();
             LOG.fine("Profile photo added - " + photo.getName());
             return Response.ok(gson.toJson("Profile photo added - " + photo.getName())).build();
@@ -285,5 +287,9 @@ public class UpdateResource {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private Entity linkPhotoWithUser(Entity e, String photoName) {
+        return Entity.newBuilder(e).set(DatastoreTypes.PHOTO_ATTR, photoName).build();
     }
 }
