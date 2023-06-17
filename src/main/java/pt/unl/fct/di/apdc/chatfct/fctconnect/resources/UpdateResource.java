@@ -17,7 +17,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -214,7 +213,7 @@ public class UpdateResource {
 
     @POST
     @Path("/addphoto")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response doAddPhoto(@Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("User attempt to update attribute(s)");
         final String token = TokenUtils.extractTokenFromHeaders(request);
@@ -254,13 +253,13 @@ public class UpdateResource {
         }
     }
 
-    private InputStream parsePhotoFromRequest(HttpServletRequest request) {
+    private PhotoData parsePhotoFromRequest(HttpServletRequest request) {
         try {
             ServletFileUpload upload = new ServletFileUpload(new DiskFileItemFactory());
             List<FileItem> items = upload.parseRequest(request);
             for (FileItem item : items) {
                 if (!item.isFormField())
-                    return item.getInputStream();
+                    return new PhotoData(item.getInputStream(), item.getName());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -269,11 +268,11 @@ public class UpdateResource {
     }
 
     private Blob addPhotoToStorage(HttpServletRequest request, String username) {
-        final InputStream photo = parsePhotoFromRequest(request);
-        if (photo == null) {
+        final PhotoData photoData = parsePhotoFromRequest(request);
+        if (photoData == null) {
             return null;
         }
-        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username);
+        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + photoData.getFileExtension();
         final Storage storage = StorageOptions.getDefaultInstance().getService();
         final BlobId blobId = BlobId.of(DatastoreTypes.BUCKET_NAME, photoName);
         final BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
@@ -281,7 +280,7 @@ public class UpdateResource {
                 .setContentType(request.getContentType())
                 .build();
         try {
-            return storage.create(blobInfo, photo.readAllBytes());
+            return storage.create(blobInfo, photoData.getBytes());
         } catch (Exception e) {
             e.printStackTrace();
             return null;
