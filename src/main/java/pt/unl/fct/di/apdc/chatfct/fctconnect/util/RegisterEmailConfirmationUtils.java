@@ -14,6 +14,9 @@ public final class RegisterEmailConfirmationUtils {
 
     private static final Logger LOG = Logger.getLogger(RegisterEmailConfirmationUtils.class.getName());
     private static final String SENDGRID_API_KEY_ENV = "SENDGRID_API_KEY";
+    private static final String SENDER_EMAIL_ENV = "SENDER_EMAIL";
+    private static final String SENDGRID_SEND_EMAIL_ENDPOINT = "mail/send";
+    private static final String SENDGRID_CONTENT_TYPE = "text/html";
     private static final String EMAIL_SUBJECT = "Account Confirmation - FCTConnect";
     private static final String HTML_STR_MSG = "<html>\n" +
             "<head>\n" +
@@ -81,14 +84,15 @@ public final class RegisterEmailConfirmationUtils {
     public static void sendEmail(String userEmail) {
         try {
             final String sendgridApiKey = System.getenv(SENDGRID_API_KEY_ENV);
-            Email from = new Email("fctconnect@googlegroups.com");
+            final String senderEmail = System.getenv(SENDER_EMAIL_ENV);
+            Email from = new Email(senderEmail);
             Email to = new Email(userEmail);
-            Content content = new Content("text/html", HTML_STR_MSG);
+            Content content = new Content(SENDGRID_CONTENT_TYPE, HTML_STR_MSG);
             Mail email = new Mail(from, EMAIL_SUBJECT, to, content);
             SendGrid sg = new SendGrid(sendgridApiKey);
             Request request = new Request();
             request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
+            request.setEndpoint(SENDGRID_SEND_EMAIL_ENDPOINT);
             request.setBody(email.build());
             Response response = sg.api(request);
             LOG.info(response.getBody());
