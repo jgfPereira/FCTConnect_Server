@@ -174,7 +174,7 @@ public class RegisterResource {
     private Entity createAccountConf(Key key, String username) {
         return Entity.newBuilder(key)
                 .set(DatastoreTypes.USERNAME_ACCOUNT_CONF, username)
-                .set(DatastoreTypes.EXPIRATION_DATE_ACCOUNT_CONF, Timestamp.now())
+                .set(DatastoreTypes.CREATION_DATE_ACCOUNT_CONF, Timestamp.now())
                 .build();
     }
 }

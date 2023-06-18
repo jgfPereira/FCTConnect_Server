@@ -57,7 +57,7 @@ public final class DatastoreTypes {
     public static final String JOB_TITLE_EMPLOYEE_ATTR = "jobTitle";
     public static final String ACCOUNT_CONFIRMATION_TYPE = "AccountConfirmation";
     public static final String USERNAME_ACCOUNT_CONF = "username";
-    public static final String EXPIRATION_DATE_ACCOUNT_CONF = "expirationDate";
+    public static final String CREATION_DATE_ACCOUNT_CONF = "creationDate";
     public static final String USER_STATUS_ATTR = "status";
     public static final String DEFAULT_STATUS = "UNCONFIRMED";
 
