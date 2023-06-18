@@ -32,7 +32,7 @@ public class ConfirmAccountResource {
         try {
             txn.commit();
             LOG.fine("Wrong password - updated logs");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
+            return Response.ok().build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());

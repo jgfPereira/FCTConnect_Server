@@ -72,7 +72,7 @@ public final class RegisterEmailConfirmationUtils {
             "<h3>Welcome to FCTConnect!</h3>\n" +
             "<img alt=\"FCTConnect Logo\" class=\"logo\" src=\"https://storage.googleapis.com/fctconnect23.appspot.com/logo.jpeg\"/>\n" +
             "<p>Please click the following button to confirm your account:</p>\n" +
-            "<a class=\"https://fctconnect23.oa.r.appspot.com/rest/register/confirm?code=%s\" href=\"your-confirmation-url\">Confirm Account</a>\n" +
+            "<a class=\"confirmation-link\" href=\"https://fctconnect23.oa.r.appspot.com/rest/register/confirm?code=%s\">Confirm Account</a>\n" +
             "<h6>If you didn't create an account in FCTConnect, please ignore this message.</h6>\n" +
             "</body>\n" +
             "</html>\n";
