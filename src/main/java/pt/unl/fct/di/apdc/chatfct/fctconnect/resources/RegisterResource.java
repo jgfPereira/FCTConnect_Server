@@ -11,6 +11,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @Path("/register")
@@ -21,6 +22,7 @@ public class RegisterResource {
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final KeyFactory accountConfirmationFactory = datastore.newKeyFactory().setKind(DatastoreTypes.ACCOUNT_CONFIRMATION_TYPE);
     private final Gson gson = new Gson();
 
     public RegisterResource() {
@@ -48,11 +50,14 @@ public class RegisterResource {
             txn.put(user);
             Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
-            final String token = createToken(username, user);
-            RegisterEmailConfirmationUtils.sendEmail("notor32495@akoption.com");
+            final Response createAccountConfirmation = createAccountConfirmation(txn, username, "notor32495@akoption.com");
+            if (createAccountConfirmation != null) {
+                txn.rollback();
+                return createAccountConfirmation;
+            }
             txn.commit();
             LOG.fine("Register done: " + username);
-            return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
+            return Response.ok(gson.toJson("Register done")).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -129,6 +134,7 @@ public class RegisterResource {
                 .set(DatastoreTypes.CREATION_DATE_ATTR, Timestamp.now())
                 .set(DatastoreTypes.ROLE_ATTR, data.role)
                 .set(DatastoreTypes.VISIBILITY_ATTR, DatastoreTypes.DEFAULT_VISIBILITY)
+                .set(DatastoreTypes.USER_STATUS_ATTR, DatastoreTypes.DEFAULT_STATUS)
                 .setNull(DatastoreTypes.BIRTH_DATE_ATTR)
                 .setNull(DatastoreTypes.PHONE_NUM_ATTR)
                 .setNull(DatastoreTypes.STREET_ATTR)
@@ -138,8 +144,37 @@ public class RegisterResource {
         return eb.build();
     }
 
-    private String createToken(String username, Entity user) {
-        final String role = user.getString(DatastoreTypes.ROLE_ATTR);
-        return TokenUtils.createToken(username, role);
+    private Response createAccountConfirmation(Transaction txn, String username, String email) {
+        final String code = UUID.randomUUID().toString();
+        final Key key = accountConfirmationFactory.newKey(code);
+        final Entity accountConfOnDB = txn.get(key);
+        final Response checkAccountConfirmationOnDB = checkAccountConfirmationOnDB(accountConfOnDB);
+        if (checkAccountConfirmationOnDB != null) {
+            return checkAccountConfirmationOnDB;
+        }
+        final Entity accountConfirmation = createAccountConf(key, username);
+        txn.put(accountConfirmation);
+        final boolean isEmailSent = RegisterEmailConfirmationUtils.sendEmail(email, code);
+        if (!isEmailSent) {
+            LOG.fine("Email was not sent - register cancelled");
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        }
+        LOG.fine("Email sent successfully");
+        return null;
+    }
+
+    private Response checkAccountConfirmationOnDB(Entity accountConfOnDB) {
+        if (accountConfOnDB != null) {
+            LOG.fine("Account confirmation already generated");
+            return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - account confirmation already generated")).build();
+        }
+        return null;
+    }
+
+    private Entity createAccountConf(Key key, String username) {
+        return Entity.newBuilder(key)
+                .set(DatastoreTypes.USERNAME_ACCOUNT_CONF, username)
+                .set(DatastoreTypes.EXPIRATION_DATE_ACCOUNT_CONF, Timestamp.now())
+                .build();
     }
 }
