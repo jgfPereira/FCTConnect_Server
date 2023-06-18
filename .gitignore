@@ -29,5 +29,5 @@ hs_err_pid*
 # IDE files
 .idea/
 
-# Configuration files
-app.yaml
+# Configuration Files
+appengine-web.xml
