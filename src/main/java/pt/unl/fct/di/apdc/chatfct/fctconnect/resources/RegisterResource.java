@@ -49,6 +49,7 @@ public class RegisterResource {
             Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
             final String token = createToken(username, user);
+            RegisterEmailConfirmationUtils.sendEmail("notor32495@akoption.com");
             txn.commit();
             LOG.fine("Register done: " + username);
             return Response.ok(gson.toJson("Register done")).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
