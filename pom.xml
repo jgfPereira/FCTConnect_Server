@@ -154,6 +154,12 @@
             <artifactId>commons-fileupload</artifactId>
             <version>1.5</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-email -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-email</artifactId>
+            <version>1.5</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -173,13 +179,6 @@
             <artifactId>jjwt-gson</artifactId>
             <version>0.11.5</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-gmail -->
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-gmail</artifactId>
-            <version>v1-rev110-1.25.0</version>
-        </dependency>
-
     </dependencies>
 
     <build>
