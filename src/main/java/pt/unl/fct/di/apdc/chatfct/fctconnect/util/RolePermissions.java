@@ -16,7 +16,8 @@ public final class RolePermissions {
                 || propertyName.equals(DatastoreTypes.PASSWORD_ATTR)
                 || propertyName.equals(DatastoreTypes.ROLE_ATTR)
                 || propertyName.equals(DatastoreTypes.EMAIL_ATTR)
-                || propertyName.equals(DatastoreTypes.PHOTO_ATTR);
+                || propertyName.equals(DatastoreTypes.PHOTO_ATTR)
+                || propertyName.equals(DatastoreTypes.USER_STATUS_ATTR);
         if (baseConstraints) {
             return false;
         }

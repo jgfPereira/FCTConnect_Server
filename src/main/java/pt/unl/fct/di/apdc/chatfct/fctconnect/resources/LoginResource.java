@@ -73,6 +73,13 @@ public class LoginResource {
             }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
+                final Response checkAccountStatus = checkAccountStatus(userOnDB);
+                if (checkAccountStatus != null) {
+                    loginRegistry = updateLoginRegistryOnLoginFail(loginRegistry);
+                    txn.update(loginRegistry);
+                    txn.commit();
+                    return checkAccountStatus;
+                }
                 Timestamp time = Timestamp.now();
                 Entity loginLog = createLoginLog(loginLogKey, headers, request, time);
                 loginRegistry = updateLoginRegistryOnLoginSuccess(loginRegistry, time);
@@ -179,6 +186,15 @@ public class LoginResource {
     private String createToken(String username, Entity userOnDB) {
         final String role = userOnDB.getString(DatastoreTypes.ROLE_ATTR);
         return TokenUtils.createToken(username, role);
+    }
+
+    private Response checkAccountStatus(Entity userOnDB) {
+        final String userStatus = userOnDB.getString(DatastoreTypes.USER_STATUS_ATTR);
+        if (userStatus.equals(DatastoreTypes.DEFAULT_STATUS)) {
+            LOG.fine("Account is not confirmed");
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Unauthorized - account is not confirmed")).build();
+        }
+        return null;
     }
 
     @POST
