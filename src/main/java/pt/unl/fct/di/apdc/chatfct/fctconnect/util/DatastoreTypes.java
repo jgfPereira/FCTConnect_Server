@@ -60,6 +60,7 @@ public final class DatastoreTypes {
     public static final String CREATION_DATE_ACCOUNT_CONF = "creationDate";
     public static final String USER_STATUS_ATTR = "status";
     public static final String DEFAULT_STATUS = "UNCONFIRMED";
+    public static final String STATUS_CONFIRMED = "CONFIRMED";
 
     private DatastoreTypes() {
     }
