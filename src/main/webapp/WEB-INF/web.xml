@@ -80,4 +80,13 @@
         <servlet-name>servlet-cleanupRevokedTokens</servlet-name>
         <url-pattern>/jobs/cleanupevokedtokens</url-pattern>
     </servlet-mapping>
+
+    <servlet>
+        <servlet-name>servlet-cleanupExpiredAccountConfs</servlet-name>
+        <servlet-class>pt.unl.fct.di.apdc.chatfct.fctconnect.servlets.CleanupExpiredAccountConfsServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>servlet-cleanupExpiredAccountConfs</servlet-name>
+        <url-pattern>/jobs/cleanupexpiredaccountconfs</url-pattern>
+    </servlet-mapping>
 </web-app>

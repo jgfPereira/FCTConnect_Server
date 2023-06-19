@@ -18,6 +18,8 @@ import javax.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Path("/register/confirm")
@@ -25,7 +27,7 @@ import java.util.logging.Logger;
 public class ConfirmAccountResource {
 
     private static final String DEFAULT_TIME_ZONE = "UTC";
-    private static final Duration TWO_HOURS_DURATION = Duration.ofHours(2);
+    private static final Duration TWO_HOURS_DURATION = Duration.ofMinutes(5);
     private static final String CODE_QUERY_PARAM = "code";
     private static final Logger LOG = Logger.getLogger(ConfirmAccountResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -65,6 +67,7 @@ public class ConfirmAccountResource {
             }
             final Entity confirmedUser = confirmUser(user);
             txn.update(confirmedUser);
+            txn.delete(key);
             txn.commit();
             LOG.fine("Account Confirmed");
             final String token = createToken(user);
@@ -134,5 +137,40 @@ public class ConfirmAccountResource {
         final String username = user.getKey().getName();
         final String role = user.getString(DatastoreTypes.ROLE_ATTR);
         return TokenUtils.createToken(username, role);
+    }
+
+    public void cleanupExpiredAccountConfirmations() {
+        Transaction txn = datastore.newTransaction();
+        try {
+            Query<Entity> accountConfirmations = getAccountConfirmations();
+            QueryResults<Entity> allAccountConfs = txn.run(accountConfirmations);
+            Key[] keys = selectExpiredAccountConfirmations(allAccountConfs);
+            txn.delete(keys);
+            txn.commit();
+            LOG.fine("Cleanup of expired account confirmations was successful");
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+            }
+        }
+    }
+
+    private Query<Entity> getAccountConfirmations() {
+        return Query.newEntityQueryBuilder()
+                .setKind(DatastoreTypes.ACCOUNT_CONFIRMATION_TYPE)
+                .build();
+    }
+
+    private Key[] selectExpiredAccountConfirmations(QueryResults<Entity> allAccountConfs) {
+        List<Key> keys = new ArrayList<>();
+        allAccountConfs.forEachRemaining(conf -> {
+            if (checkExpirationDate(conf)) {
+                keys.add(conf.getKey());
+            }
+        });
+        return keys.toArray(new Key[keys.size()]);
     }
 }

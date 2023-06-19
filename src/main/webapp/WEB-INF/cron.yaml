@@ -3,3 +3,8 @@ cron:
     url: /jobs/cleanupevokedtokens
     schedule: every 24 hours
     timezone: UTC
+
+  - description: Expired Account Confirmations Cleanup
+    url: /jobs/cleanupexpiredaccountconfs
+    schedule: every 24 hours
+    timezone: UTC
