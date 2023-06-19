@@ -37,4 +37,8 @@ public final class BackOfficeRolePermissions {
     public static boolean canGetAdminsInfo(String role) {
         return role.equals(ADMIN_ROLE);
     }
+
+    public static boolean canCreateEvent(String role) {
+        return role.equals(ADMIN_ROLE);
+    }
 }

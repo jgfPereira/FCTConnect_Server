@@ -50,7 +50,7 @@ public class RegisterResource {
             txn.put(user);
             Entity specificUser = createSpecificUser(username, data.role);
             txn.put(specificUser);
-            final Response createAccountConfirmation = createAccountConfirmation(txn, username, "kotepak639@anomgo.com");
+            final Response createAccountConfirmation = createAccountConfirmation(txn, username, data.email);
             if (createAccountConfirmation != null) {
                 txn.rollback();
                 return createAccountConfirmation;

@@ -61,6 +61,14 @@ public final class DatastoreTypes {
     public static final String USER_STATUS_ATTR = "status";
     public static final String DEFAULT_STATUS = "UNCONFIRMED";
     public static final String STATUS_CONFIRMED = "CONFIRMED";
+    public static final String EVENT_TYPE = "Event";
+    public static final String EVENT_NAME_ATTR = "name";
+    public static final String EVENT_COORD_X_ATTR = "coordX";
+    public static final String EVENT_COORD_Y_ATTR = "coordY";
+    public static final String EVENT_DESCRIPTION_ATTR = "description";
+    public static final String EVENT_ACL_ATTR = "acl";
+    public static final String EVENT_START_DATE_ATTR = "startDate";
+    public static final String EVENT_END_DATE_ATTR = "endDate";
 
     private DatastoreTypes() {
     }
