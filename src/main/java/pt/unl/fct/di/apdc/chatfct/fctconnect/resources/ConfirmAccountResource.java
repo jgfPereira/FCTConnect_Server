@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 public class ConfirmAccountResource {
 
     private static final String DEFAULT_TIME_ZONE = "UTC";
-    private static final Duration TWO_HOURS_DURATION = Duration.ofMinutes(5);
+    private static final Duration TWO_HOURS_DURATION = Duration.ofHours(2);
     private static final String CODE_QUERY_PARAM = "code";
     private static final Logger LOG = Logger.getLogger(ConfirmAccountResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -102,11 +102,11 @@ public class ConfirmAccountResource {
 
     private boolean checkExpirationDate(Entity accountConfOnDB) {
         Timestamp creationDate = accountConfOnDB.getTimestamp(DatastoreTypes.CREATION_DATE_ACCOUNT_CONF);
-        Instant revocationDateInstant = setTimeZoneInstant(creationDate.toSqlTimestamp().toInstant());
-        Timestamp atLeastMaxExpirationDate = Timestamp.of(new java.sql.Timestamp(revocationDateInstant.plus(TWO_HOURS_DURATION).toEpochMilli()));
-        Instant atLeastMaxExpirationInstant = setTimeZoneInstant(atLeastMaxExpirationDate.toSqlTimestamp().toInstant());
+        Instant creationDateInstant = setTimeZoneInstant(creationDate.toSqlTimestamp().toInstant());
+        Timestamp expirationDate = Timestamp.of(new java.sql.Timestamp(creationDateInstant.plus(TWO_HOURS_DURATION).toEpochMilli()));
+        Instant expirationDateInstant = setTimeZoneInstant(expirationDate.toSqlTimestamp().toInstant());
         Instant currentInstant = setTimeZoneInstant(Timestamp.now().toSqlTimestamp().toInstant());
-        return currentInstant.isAfter(atLeastMaxExpirationInstant);
+        return currentInstant.isAfter(expirationDateInstant);
     }
 
     private Instant setTimeZoneInstant(Instant i) {
