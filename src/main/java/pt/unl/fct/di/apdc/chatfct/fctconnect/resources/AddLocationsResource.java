@@ -30,7 +30,7 @@ public class AddLocationsResource {
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
     public Response doAddLocations(AddLocationsData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Backoffice user attempt to add locations");
         final String token = TokenUtils.extractTokenFromHeaders(request);
