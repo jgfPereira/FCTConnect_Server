@@ -18,7 +18,3 @@ indexes:
     properties:
       - name: role
       - name: name
-
-  - kind: Event
-    properties:
-      - name: acl
