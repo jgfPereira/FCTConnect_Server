@@ -70,6 +70,7 @@ public final class DatastoreTypes {
     public static final String EVENT_LOCATION_ATTR = "location";
     public static final String LOCATIONS_TYPE = "Locations";
     public static final String LOCATIONS_TYPE_KEY = "uniPlaces";
+    public static final String LOCATIONS_PLACES_ATTR = "places";
 
     private DatastoreTypes() {
     }

@@ -119,7 +119,7 @@ public class AddLocationsResource {
 
     private Entity createLocations(Key locationsKey, AddLocationsData data) {
         return Entity.newBuilder(locationsKey)
-                .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getLocationsFirst(), data.getLocationsRest()))
+                .set(DatastoreTypes.LOCATIONS_PLACES_ATTR, ListValue.of(data.getLocationsFirst(), data.getLocationsRest()))
                 .build();
     }
 
