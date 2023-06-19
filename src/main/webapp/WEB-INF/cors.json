@@ -1,8 +1,7 @@
 [
   {
     "origin": [
-      "https://fctconnect.appspot.com/",
-      "https://fctconnect.oa.r.appspot.com/"
+      "*"
     ],
     "method": [
       "GET",
@@ -10,7 +9,8 @@
     ],
     "responseHeader": [
       "Content-Type",
-      "Access-Control-Allow-Origin"
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Headers"
     ],
     "maxAgeSeconds": 3600
   }
