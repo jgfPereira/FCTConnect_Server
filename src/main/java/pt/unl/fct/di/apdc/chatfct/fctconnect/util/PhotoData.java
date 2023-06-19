@@ -19,13 +19,17 @@ public class PhotoData {
         return bytes.readAllBytes();
     }
 
-    public String getFileExtension() {
+    public String getCompleteFileExtension() {
         final String filename = Paths.get(fullFileName).getFileName().toString();
         final int dotIndex = filename.lastIndexOf(EXTENSION_SEPARATOR);
         if (dotIndex != -1) {
             return filename.substring(dotIndex);
         }
         throw new RuntimeException("Invalid filename");
+    }
+
+    public String getOnlyFileExtension() {
+        return getCompleteFileExtension().substring(1);
     }
 
     @Override

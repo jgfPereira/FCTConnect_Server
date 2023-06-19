@@ -1,6 +1,5 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
-import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
@@ -17,24 +16,23 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/createevent")
+@Path("/addplaces")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class CreateEventBackOfficeResource {
+public class AddLocationsResource {
 
-    private static final String START_OF_DAY_UTC = "T00:00:00Z";
-    private static final Logger LOG = Logger.getLogger(CreateEventBackOfficeResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(AddLocationsResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
-    private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
+    private final KeyFactory locationsKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.LOCATIONS_TYPE);
     private final Gson gson = new Gson();
 
-    public CreateEventBackOfficeResource() {
+    public AddLocationsResource() {
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doCreateEvent(CreateEventData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("Backoffice user attempt to create event");
+    public Response doAddLocations(AddLocationsData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Backoffice user attempt to add locations");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
@@ -49,7 +47,7 @@ public class CreateEventBackOfficeResource {
         }
         data.removeDuplicatesAndFormat();
         Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
-        Key eventKey = eventKeyFactory.newKey(data.id);
+        Key locationsKey = locationsKeyFactory.newKey(DatastoreTypes.LOCATIONS_TYPE_KEY);
         Transaction txn = datastore.newTransaction();
         try {
             final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
@@ -58,22 +56,22 @@ public class CreateEventBackOfficeResource {
                 txn.rollback();
                 return checkBackOfficeUserOnDB;
             }
-            final Response canCreateEvent = canCreateEvent(role);
-            if (canCreateEvent != null) {
+            final Response canAddLocations = canAddLocations(role);
+            if (canAddLocations != null) {
                 txn.rollback();
-                return canCreateEvent;
+                return canAddLocations;
             }
-            final Entity eventOnDB = txn.get(eventKey);
-            final Response checkEventOnDB = checkEventOnDB(eventOnDB);
-            if (checkEventOnDB != null) {
+            final Entity locationsOnDB = txn.get(locationsKey);
+            final Response checkLocationsOnDB = checkLocationsOnDB(locationsOnDB);
+            if (checkLocationsOnDB != null) {
                 txn.rollback();
-                return checkEventOnDB;
+                return checkLocationsOnDB;
             }
-            final Entity eventCreated = createEvent(eventKey, data);
-            txn.put(eventCreated);
+            final Entity locationsCreated = createLocations(locationsKey, data);
+            txn.put(locationsCreated);
             txn.commit();
-            LOG.info("Event was created - " + data.id);
-            return Response.ok(gson.toJson("Event was created - " + data.id)).build();
+            LOG.info("Locations was added successfully");
+            return Response.ok(gson.toJson("Locations was added successfully")).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -86,7 +84,7 @@ public class CreateEventBackOfficeResource {
         }
     }
 
-    private Response checkData(CreateEventData data) {
+    private Response checkData(AddLocationsData data) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one required field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
@@ -102,37 +100,27 @@ public class CreateEventBackOfficeResource {
         return null;
     }
 
-    private Response canCreateEvent(String role) {
-        final boolean canApproveAccount = BackOfficeRolePermissions.canCreateEvent(role);
-        if (!canApproveAccount) {
-            LOG.fine("Dont have permission to create event");
-            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to create event")).build();
+    private Response canAddLocations(String role) {
+        final boolean canAddLocations = BackOfficeRolePermissions.canAddLocations(role);
+        if (!canAddLocations) {
+            LOG.fine("Dont have permission to add locations");
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to add locations")).build();
         }
         return null;
     }
 
-    private Response checkEventOnDB(Entity eventOnDB) {
-        if (eventOnDB != null) {
-            LOG.fine("Event already exist");
-            return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - Event already exist")).build();
+    private Response checkLocationsOnDB(Entity locationsOnDB) {
+        if (locationsOnDB != null) {
+            LOG.fine("Locations already exist");
+            return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - Locations already exist")).build();
         }
         return null;
     }
 
-    private Entity createEvent(Key eventKey, CreateEventData data) {
-        Entity.Builder eb = Entity.newBuilder(eventKey)
-                .set(DatastoreTypes.EVENT_NAME_ATTR, data.name)
-                .set(DatastoreTypes.EVENT_LOCATION_ATTR, data.location)
-                .set(DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description)
-                .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getAclFirst(), data.getAclRest()));
-        updateDateProperty(eb, DatastoreTypes.EVENT_START_DATE_ATTR, data.startDate);
-        updateDateProperty(eb, DatastoreTypes.EVENT_END_DATE_ATTR, data.endDate);
-        return eb.build();
-    }
-
-    private void updateDateProperty(Entity.Builder eb, String propertyName, String date) {
-        final String dateWithTime = date + START_OF_DAY_UTC;
-        eb.set(propertyName, Timestamp.parseTimestamp(dateWithTime));
+    private Entity createLocations(Key locationsKey, AddLocationsData data) {
+        return Entity.newBuilder(locationsKey)
+                .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getLocationsFirst(), data.getLocationsRest()))
+                .build();
     }
 
     private TokenInfo verifyToken(final String token) {

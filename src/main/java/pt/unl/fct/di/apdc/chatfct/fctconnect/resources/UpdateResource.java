@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 public class UpdateResource {
 
     private static final String START_OF_DAY_UTC = "T00:00:00Z";
+    private static final String IMAGE_MIME_FMT = "image/%s";
     private static final Logger LOG = Logger.getLogger(UpdateResource.class.getName());
     private static final String SEPARATOR = " ";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -290,12 +291,12 @@ public class UpdateResource {
         if (photoData == null) {
             return null;
         }
-        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + photoData.getFileExtension();
+        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + photoData.getCompleteFileExtension();
         final Storage storage = StorageOptions.getDefaultInstance().getService();
         final BlobId blobId = BlobId.of(DatastoreTypes.BUCKET_NAME, photoName);
         final BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setAcl(Collections.singletonList(Acl.newBuilder(Acl.User.ofAllUsers(), Acl.Role.READER).build()))
-                .setContentType(request.getContentType())
+                .setContentType(String.format(IMAGE_MIME_FMT, photoData.getOnlyFileExtension()))
                 .build();
         try {
             return storage.create(blobInfo, photoData.getBytes());

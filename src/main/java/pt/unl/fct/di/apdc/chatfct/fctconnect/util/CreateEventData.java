@@ -9,8 +9,7 @@ public class CreateEventData {
     private static final int ACL_REST_START_INDEX = 1;
     public String id;
     public String name;
-    public String coordX;
-    public String coordY;
+    public String location;
     public String description;
     public String startDate;
     public String endDate;
@@ -20,9 +19,8 @@ public class CreateEventData {
     }
 
     public boolean validateData() {
-        return !(id == null || name == null || coordX == null || coordY == null
-                || description == null || startDate == null || endDate == null
-                || acl == null || acl.length == 0);
+        return !(id == null || name == null || location == null || description == null
+                || startDate == null || endDate == null || acl == null || acl.length == 0);
     }
 
     public void removeDuplicatesAndFormat() {
