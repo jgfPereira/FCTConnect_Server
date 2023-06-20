@@ -1,6 +1,8 @@
 [
   {
     "origin": [
+      "https://fctconnect23.appspot.com/",
+      "https://fctconnect23.oa.r.appspot.com/",
       "*"
     ],
     "method": [
