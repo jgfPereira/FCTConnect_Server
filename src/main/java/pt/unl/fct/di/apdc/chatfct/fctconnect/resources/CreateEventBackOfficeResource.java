@@ -90,6 +90,12 @@ public class CreateEventBackOfficeResource {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one required field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+        } else if (!data.checkDatesValidity()) {
+            LOG.fine("Invalid data: startDate >= endDate");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - start date has to be before end date")).build();
+        } else if (!data.areDatesOnFuture()) {
+            LOG.fine("Invalid data: dates have to be in the future");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - dates have to be in the future")).build();
         }
         return null;
     }
@@ -129,7 +135,7 @@ public class CreateEventBackOfficeResource {
                 .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate));
         return eb.build();
     }
-    
+
     private TokenInfo verifyToken(final String token) {
         try {
             return TokenUtils.verifyToken(token);
