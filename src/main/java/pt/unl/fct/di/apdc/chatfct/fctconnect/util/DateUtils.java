@@ -1,5 +1,7 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import com.google.cloud.Timestamp;
+
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -24,5 +26,16 @@ public final class DateUtils {
 
     public static boolean isTimestampValid(String str) {
         return isTimestampRFC3339(str) && str.split(TIME_SEPARATOR)[0].matches(RegexExp.DATE_REGEX);
+    }
+
+    public static boolean isTimestampAfter(String startDate, String endDate) {
+        final Timestamp startDateTimestamp = Timestamp.parseTimestamp(startDate);
+        final Timestamp endDateTimestamp = Timestamp.parseTimestamp(endDate);
+        return startDateTimestamp.compareTo(endDateTimestamp) < 0;
+    }
+
+    public static boolean areTimestampsOnFuture(String startDate) {
+        final Timestamp startDateTimestamp = Timestamp.parseTimestamp(startDate);
+        return startDateTimestamp.compareTo(Timestamp.now()) > 0;
     }
 }

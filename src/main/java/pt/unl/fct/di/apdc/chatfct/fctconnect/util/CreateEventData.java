@@ -24,6 +24,14 @@ public class CreateEventData {
                 || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate));
     }
 
+    public boolean checkDatesValidity() {
+        return DateUtils.isTimestampAfter(startDate, endDate);
+    }
+
+    public boolean areDatesOnFuture() {
+        return DateUtils.areTimestampsOnFuture(startDate);
+    }
+
     public void removeDuplicatesAndFormat() {
         List<String> res = new ArrayList<>();
         for (String tag : acl) {
