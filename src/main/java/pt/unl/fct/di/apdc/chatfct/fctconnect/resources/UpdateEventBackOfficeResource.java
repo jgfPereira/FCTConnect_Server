@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class UpdateEventBackOfficeResource {
 
-    private static final String START_OF_DAY_UTC = "T00:00:00Z";
     private static final String SEPARATOR = " ";
     private static final Logger LOG = Logger.getLogger(UpdateEventBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -144,8 +143,7 @@ public class UpdateEventBackOfficeResource {
     }
 
     private void updateDateProperty(Entity.Builder eb, String propertyName, String date) {
-        final String dateWithTime = date + START_OF_DAY_UTC;
-        eb.set(propertyName, Timestamp.parseTimestamp(dateWithTime));
+        eb.set(propertyName, Timestamp.parseTimestamp(date));
     }
 
     private void updateProperty(Entity.Builder eb, String propertyName, String newValue) {
@@ -160,7 +158,7 @@ public class UpdateEventBackOfficeResource {
         switch (property) {
             case DatastoreTypes.EVENT_START_DATE_ATTR:
             case DatastoreTypes.EVENT_END_DATE_ATTR:
-                return newValue.matches(RegexExp.DATE_REGEX);
+                return DateUtils.isTimestampValid(newValue);
             case DatastoreTypes.EVENT_NAME_ATTR:
             case DatastoreTypes.EVENT_LOCATION_ATTR:
             case DatastoreTypes.EVENT_DESCRIPTION_ATTR:

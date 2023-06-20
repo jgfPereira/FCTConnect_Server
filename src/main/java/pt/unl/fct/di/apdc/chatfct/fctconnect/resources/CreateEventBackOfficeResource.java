@@ -124,17 +124,12 @@ public class CreateEventBackOfficeResource {
                 .set(DatastoreTypes.EVENT_NAME_ATTR, data.name)
                 .set(DatastoreTypes.EVENT_LOCATION_ATTR, data.location)
                 .set(DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description)
-                .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getAclFirst(), data.getAclRest()));
-        updateDateProperty(eb, DatastoreTypes.EVENT_START_DATE_ATTR, data.startDate);
-        updateDateProperty(eb, DatastoreTypes.EVENT_END_DATE_ATTR, data.endDate);
+                .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getAclFirst(), data.getAclRest()))
+                .set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(data.startDate))
+                .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate));
         return eb.build();
     }
-
-    private void updateDateProperty(Entity.Builder eb, String propertyName, String date) {
-        final String dateWithTime = date + START_OF_DAY_UTC;
-        eb.set(propertyName, Timestamp.parseTimestamp(dateWithTime));
-    }
-
+    
     private TokenInfo verifyToken(final String token) {
         try {
             return TokenUtils.verifyToken(token);

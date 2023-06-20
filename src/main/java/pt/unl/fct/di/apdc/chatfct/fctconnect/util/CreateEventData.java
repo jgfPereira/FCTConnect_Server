@@ -20,7 +20,8 @@ public class CreateEventData {
 
     public boolean validateData() {
         return !(id == null || name == null || location == null || description == null
-                || startDate == null || endDate == null || acl == null || acl.length == 0);
+                || startDate == null || endDate == null || acl == null || acl.length == 0
+                || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate));
     }
 
     public void removeDuplicatesAndFormat() {
