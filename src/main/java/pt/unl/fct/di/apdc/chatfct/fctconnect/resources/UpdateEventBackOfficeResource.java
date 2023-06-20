@@ -127,38 +127,94 @@ public class UpdateEventBackOfficeResource {
     private Entity updateEvent(Entity event, UpdateEventData data, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(event);
         for (UpdateEntry entry : data.updateEntries) {
-            if (!checkPropertyFormat(entry.propertyName, entry.newValue)) {
+            if (!checkPropertyFormat(entry.propertyName)) {
                 LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
                 invalidFormatUpdates.add(entry.propertyName);
             } else {
                 updateProperty(eb, entry.propertyName, entry.newValue);
-                LOG.fine("Updated property " + entry.propertyName);
             }
         }
+        handleDateUpdates(eb, event, data, invalidFormatUpdates);
         return eb.build();
+    }
+
+    private void handleDateUpdates(Entity.Builder eb, Entity event, UpdateEventData data, List<String> invalidFormatUpdates) {
+        final int indexOfStartDate = data.indexOfDate(DatastoreTypes.EVENT_START_DATE_ATTR);
+        final int indexOfEndDate = data.indexOfDate(DatastoreTypes.EVENT_END_DATE_ATTR);
+        if (indexOfStartDate != -1 && indexOfEndDate != -1) {
+            final String startDate = data.updateEntries[indexOfStartDate].newValue;
+            final String endDate = data.updateEntries[indexOfEndDate].newValue;
+            final boolean canSetDates = canSetDates(invalidFormatUpdates, startDate, endDate, DateUpdate.ALL);
+            if (!canSetDates) {
+                return;
+            }
+            eb.set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(startDate))
+                    .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(endDate));
+            LOG.fine("Updated event dates");
+        } else if (indexOfStartDate != -1) {
+            final String startDate = data.updateEntries[indexOfStartDate].newValue;
+            final String endDate = DateUtils.dateToStringUTC(event.getTimestamp(DatastoreTypes.EVENT_END_DATE_ATTR).toDate());
+            final boolean canSetDates = canSetDates(invalidFormatUpdates, startDate, endDate, DateUpdate.START_DATE);
+            if (!canSetDates) {
+                return;
+            }
+            eb.set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(startDate));
+            LOG.fine("Updated event start date (end date is the same)");
+        } else if (indexOfEndDate != -1) {
+            final String startDate = DateUtils.dateToStringUTC(event.getTimestamp(DatastoreTypes.EVENT_START_DATE_ATTR).toDate());
+            final String endDate = data.updateEntries[indexOfEndDate].newValue;
+            final boolean canSetDates = canSetDates(invalidFormatUpdates, startDate, endDate, DateUpdate.END_DATE);
+            if (!canSetDates) {
+                return;
+            }
+            eb.set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(endDate));
+            LOG.fine("Updated event end date (start date is the same)");
+        }
+    }
+
+    private boolean canSetDates(List<String> invalidFormatUpdates, String startDate, String endDate, DateUpdate dateUpdate) {
+        if (!DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate)) {
+            handleInvalidDates(dateUpdate, invalidFormatUpdates);
+            LOG.fine("Invalid format - event dates have to conform to RFC 3339");
+            return false;
+        } else if (!DateUtils.areTimestampsOnFuture(startDate) || !DateUtils.areTimestampsOnFuture(endDate)) {
+            handleInvalidDates(dateUpdate, invalidFormatUpdates);
+            LOG.fine("Invalid format - event dates have to be on future");
+            return false;
+        } else if (!DateUtils.isTimestampBefore(startDate, endDate)) {
+            handleInvalidDates(dateUpdate, invalidFormatUpdates);
+            LOG.fine("Invalid format - start date has to be before end date");
+            return false;
+        }
+        return true;
+    }
+
+    private void handleInvalidDates(DateUpdate dateUpdate, List<String> invalidFormatUpdates) {
+        if (dateUpdate == DateUpdate.ALL) {
+            invalidFormatUpdates.add(DatastoreTypes.EVENT_START_DATE_ATTR);
+            invalidFormatUpdates.add(DatastoreTypes.EVENT_END_DATE_ATTR);
+        } else if (dateUpdate == DateUpdate.START_DATE) {
+            invalidFormatUpdates.add(DatastoreTypes.EVENT_START_DATE_ATTR);
+        } else {
+            invalidFormatUpdates.add(DatastoreTypes.EVENT_END_DATE_ATTR);
+        }
     }
 
     private boolean isDateProperty(String property) {
         return property.equals(DatastoreTypes.EVENT_START_DATE_ATTR) || property.equals(DatastoreTypes.EVENT_END_DATE_ATTR);
     }
 
-    private void updateDateProperty(Entity.Builder eb, String propertyName, String date) {
-        eb.set(propertyName, Timestamp.parseTimestamp(date));
-    }
-
     private void updateProperty(Entity.Builder eb, String propertyName, String newValue) {
-        if (isDateProperty(propertyName)) {
-            updateDateProperty(eb, propertyName, newValue);
-        } else {
+        if (!isDateProperty(propertyName)) {
             eb.set(propertyName, newValue);
+            LOG.fine("Updated property: " + propertyName);
         }
     }
 
-    private boolean checkPropertyFormat(String property, String newValue) {
+    private boolean checkPropertyFormat(String property) {
         switch (property) {
             case DatastoreTypes.EVENT_START_DATE_ATTR:
             case DatastoreTypes.EVENT_END_DATE_ATTR:
-                return DateUtils.isTimestampValid(newValue);
             case DatastoreTypes.EVENT_NAME_ATTR:
             case DatastoreTypes.EVENT_LOCATION_ATTR:
             case DatastoreTypes.EVENT_DESCRIPTION_ATTR:
@@ -212,5 +268,9 @@ public class UpdateEventBackOfficeResource {
             LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
             return null;
         }
+    }
+
+    private enum DateUpdate {
+        ALL, START_DATE, END_DATE
     }
 }

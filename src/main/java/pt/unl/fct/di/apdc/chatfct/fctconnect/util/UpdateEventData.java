@@ -24,4 +24,12 @@ public class UpdateEventData {
         }
         updateEntries = res.toArray(new UpdateEntry[res.size()]);
     }
+
+    public int indexOfDate(String datePropertyName) {
+        for (int i = 0; i < updateEntries.length; i++) {
+            if (updateEntries[i].propertyName.equals(datePropertyName))
+                return i;
+        }
+        return -1;
+    }
 }

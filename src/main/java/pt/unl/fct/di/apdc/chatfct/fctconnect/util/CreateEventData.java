@@ -25,7 +25,7 @@ public class CreateEventData {
     }
 
     public boolean checkDatesValidity() {
-        return DateUtils.isTimestampAfter(startDate, endDate);
+        return DateUtils.isTimestampBefore(startDate, endDate);
     }
 
     public boolean areDatesOnFuture() {
