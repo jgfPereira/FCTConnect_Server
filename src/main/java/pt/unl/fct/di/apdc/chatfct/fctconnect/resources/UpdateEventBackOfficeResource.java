@@ -50,6 +50,7 @@ public class UpdateEventBackOfficeResource {
         if (checkData != null) {
             return checkData;
         }
+        data.removeDuplicates();
         Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
