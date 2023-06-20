@@ -2,14 +2,16 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 import com.google.cloud.Timestamp;
 
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 public final class DateUtils {
 
-    private static final String TIMESTAMP_RFC_3339_FMT = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
+    private static final String TIMESTAMP_RFC_3339_FMT = "yyyy-MM-dd'T'HH:mm:ssX";
     private static final String TIME_SEPARATOR = "T";
+    private static final String DATASTORE_DATES_TIMEZONE = "UTC+1";
+    private static final String DEFAULT_TIMEZONE = "UTC";
 
     private DateUtils() {
     }
@@ -34,8 +36,16 @@ public final class DateUtils {
         return startDateTimestamp.compareTo(endDateTimestamp) < 0;
     }
 
+    private static LocalDateTime timestampToLocalDateTimeUTC(Timestamp t) {
+        final Instant instant = Instant.ofEpochSecond(t.getSeconds(), t.getNanos());
+        final ZonedDateTime utcPlusOneDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of(DATASTORE_DATES_TIMEZONE));
+        final ZonedDateTime utcDateTime = utcPlusOneDateTime.withZoneSameInstant(ZoneId.of(DEFAULT_TIMEZONE));
+        return utcDateTime.toLocalDateTime();
+    }
+
     public static boolean areTimestampsOnFuture(String startDate) {
-        final Timestamp startDateTimestamp = Timestamp.parseTimestamp(startDate);
-        return startDateTimestamp.compareTo(Timestamp.now()) > 0;
+        final LocalDateTime startLocalDate = timestampToLocalDateTimeUTC(Timestamp.parseTimestamp(startDate));
+        final LocalDateTime nowLocalDate = timestampToLocalDateTimeUTC(Timestamp.now());
+        return startLocalDate.isAfter(nowLocalDate);
     }
 }
