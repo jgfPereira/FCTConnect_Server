@@ -32,7 +32,7 @@ public class RemoveEventBackOfficeResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doRemoveEvent(RemoveEventData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("Backoffice user attempt to create event");
+        LOG.fine("Backoffice user attempt to remove event");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {

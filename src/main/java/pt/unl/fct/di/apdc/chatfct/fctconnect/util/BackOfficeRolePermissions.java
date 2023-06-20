@@ -49,4 +49,8 @@ public final class BackOfficeRolePermissions {
     public static boolean canRemoveEvent(String role) {
         return role.equals(ADMIN_ROLE);
     }
+
+    public static boolean canUpdateEvent(String role) {
+        return role.equals(ADMIN_ROLE);
+    }
 }
