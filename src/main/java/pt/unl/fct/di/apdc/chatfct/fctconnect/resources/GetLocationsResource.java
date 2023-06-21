@@ -52,7 +52,7 @@ public class GetLocationsResource {
     }
 
     private List<String> getLocationsList(Entity locationsOnDB) {
-        List<Value<?>> list = locationsOnDB.getList(DatastoreTypes.EVENT_ACL_ATTR);
+        List<Value<?>> list = locationsOnDB.getList(DatastoreTypes.LOCATIONS_PLACES_ATTR);
         List<String> res = new ArrayList<>();
         for (Value<?> v : list) {
             res.add((String) v.get());
