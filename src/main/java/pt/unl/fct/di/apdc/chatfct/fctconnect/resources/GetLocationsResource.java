@@ -29,7 +29,6 @@ public class GetLocationsResource {
             final List<String> allLocations = getLocationsList(locationsOnDB);
             txn.commit();
             LOG.fine("Locations fetching was successful");
-            LOG.severe(allLocations.toString());
             return allLocations;
         } catch (Exception e) {
             txn.rollback();
