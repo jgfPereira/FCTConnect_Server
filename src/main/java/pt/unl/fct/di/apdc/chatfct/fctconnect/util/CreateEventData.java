@@ -21,11 +21,10 @@ public class CreateEventData {
     public boolean validateData() {
         return !(id == null || name == null || location == null || description == null
                 || startDate == null || endDate == null || acl == null || acl.length == 0
-                || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate)
-                || !validateAclTags());
+                || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate));
     }
 
-    private boolean validateAclTags() {
+    public boolean validateAclTags() {
         for (String tag : acl) {
             tag = tag.toUpperCase().trim();
             if (!tag.matches(RegexExp.ROLE_REGEX))
@@ -42,7 +41,7 @@ public class CreateEventData {
         return DateUtils.areTimestampsOnFuture(startDate);
     }
 
-    public void removeDuplicatesAndFormat() {
+    public void removeDuplicates() {
         List<String> res = new ArrayList<>();
         for (String tag : acl) {
             if (!res.contains(tag)) {

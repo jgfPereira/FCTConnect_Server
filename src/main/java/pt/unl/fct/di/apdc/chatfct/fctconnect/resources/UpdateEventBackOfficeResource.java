@@ -127,7 +127,7 @@ public class UpdateEventBackOfficeResource {
     private Entity updateEvent(Entity event, UpdateEventData data, List<String> invalidFormatUpdates) {
         Entity.Builder eb = Entity.newBuilder(event);
         for (UpdateEntry entry : data.updateEntries) {
-            if (!checkPropertyFormat(entry.propertyName)) {
+            if (!checkPropertyFormat(entry.propertyName, entry.newValue)) {
                 LOG.fine("Format of the new value is invalid for the property " + entry.propertyName);
                 invalidFormatUpdates.add(entry.propertyName);
             } else {
@@ -211,17 +211,27 @@ public class UpdateEventBackOfficeResource {
         }
     }
 
-    private boolean checkPropertyFormat(String property) {
+    private boolean checkPropertyFormat(String property, String newValue) {
         switch (property) {
             case DatastoreTypes.EVENT_START_DATE_ATTR:
             case DatastoreTypes.EVENT_END_DATE_ATTR:
             case DatastoreTypes.EVENT_NAME_ATTR:
-            case DatastoreTypes.EVENT_LOCATION_ATTR:
             case DatastoreTypes.EVENT_DESCRIPTION_ATTR:
                 return true;
+            case DatastoreTypes.EVENT_LOCATION_ATTR:
+                return isLocationValid(newValue);
             default:
                 return false;
         }
+    }
+
+    private boolean isLocationValid(String location) {
+        final List<String> allLocations = new GetLocationsResource().getLocations();
+        for (String l : allLocations) {
+            if (l.equals(location))
+                return true;
+        }
+        return false;
     }
 
     private boolean didEventChanged(List<String> invalidFormatUpdates, UpdateEntry[] updateEntries) {

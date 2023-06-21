@@ -15,13 +15,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.logging.Logger;
 
 @Path("/createevent")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class CreateEventBackOfficeResource {
 
-    private static final String START_OF_DAY_UTC = "T00:00:00Z";
     private static final Logger LOG = Logger.getLogger(CreateEventBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
@@ -47,7 +47,7 @@ public class CreateEventBackOfficeResource {
         if (checkData != null) {
             return checkData;
         }
-        data.removeDuplicatesAndFormat();
+        data.removeDuplicates();
         Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
@@ -96,8 +96,23 @@ public class CreateEventBackOfficeResource {
         } else if (!data.areDatesOnFuture()) {
             LOG.fine("Invalid data: dates have to be in the future");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - dates have to be in the future")).build();
+        } else if (!data.validateAclTags()) {
+            LOG.fine("Invalid data: unrecognized acl tag(s)");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized acl tag(s)")).build();
+        } else if (!isLocationValid(data.location)) {
+            LOG.fine("Invalid data: unrecognized location");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized location")).build();
         }
         return null;
+    }
+
+    private boolean isLocationValid(String location) {
+        final List<String> allLocations = new GetLocationsResource().getLocations();
+        for (String l : allLocations) {
+            if (l.equals(location))
+                return true;
+        }
+        return false;
     }
 
     private Response checkBackOfficeUserOnDB(Entity backOfficeUserOnDB) {
