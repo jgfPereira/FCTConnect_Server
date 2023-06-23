@@ -3,12 +3,15 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeRolePermissions;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -21,6 +24,7 @@ import java.util.logging.Logger;
 public class RemoveEventBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(RemoveEventBackOfficeResource.class.getName());
+    private static final String ID_PATH_PARAM = "id";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
@@ -29,9 +33,8 @@ public class RemoveEventBackOfficeResource {
     public RemoveEventBackOfficeResource() {
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRemoveEvent(RemoveEventData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    @DELETE
+    public Response doRemoveEvent(@PathParam(ID_PATH_PARAM) String id, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Backoffice user attempt to remove event");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -41,12 +44,12 @@ public class RemoveEventBackOfficeResource {
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
         final String role = tokenInfo.getRole();
-        final Response checkData = checkData(data);
-        if (checkData != null) {
-            return checkData;
+        final Response checkId = checkData(id);
+        if (checkId != null) {
+            return checkId;
         }
         Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
-        Key eventKey = eventKeyFactory.newKey(data.id);
+        Key eventKey = eventKeyFactory.newKey(id);
         Transaction txn = datastore.newTransaction();
         try {
             final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
@@ -68,8 +71,8 @@ public class RemoveEventBackOfficeResource {
             }
             txn.delete(eventKey);
             txn.commit();
-            LOG.info("Event was removed - " + data.id);
-            return Response.ok(gson.toJson("Event was removed - " + data.id)).build();
+            LOG.info("Event was removed - " + id);
+            return Response.ok(gson.toJson("Event was removed - " + id)).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -82,9 +85,9 @@ public class RemoveEventBackOfficeResource {
         }
     }
 
-    private Response checkData(RemoveEventData data) {
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one required field is null");
+    private Response checkData(String id) {
+        if (id == null || id.isBlank()) {
+            LOG.fine("Invalid data: id is invalid");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
         }
         return null;
