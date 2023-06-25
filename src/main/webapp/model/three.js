@@ -157,7 +157,7 @@ function showThreePopup(popup) {
     caractherPopup.appendChild(renderer.domElement);
     
     const gltfLoader2 = new GLTFLoader();
-    gltfLoader2.load('/monster.glb', function (gltf) {
+    gltfLoader2.load('./monster.glb', function (gltf) {
         const player2 = gltf.scene;
         scene.add(player2);
     });
@@ -195,8 +195,7 @@ function init() {
     fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
             method: 'GET',
             headers: {
-              'x-auth-token': 'Bearer ***REMOVED***'
-            }
+              'x-auth-token': 'Bearer ***REMOVED***'}
           })
           .then(response => {
             if (response.ok) {
@@ -291,7 +290,7 @@ function init() {
     );
 
     new RGBELoader()
-        .load('/puresky.hdr', function (texture) {
+        .load('./puresky.hdr', function (texture) {
 
             texture.mapping = THREE.EquirectangularReflectionMapping;
 
@@ -310,7 +309,7 @@ function init() {
     gltfLoader.setDRACOLoader(dracoLoader);
     gltfLoader.load(
         // resource URL
-        '/compressedFinalDraco.glb',
+        './compressedFinalDraco.glb',
         // called when the resource is loaded
         function (draco) {
             model = draco.scene;
@@ -338,7 +337,7 @@ function init() {
     );
     gltfLoader.load(
         // resource URL
-        '/diBuildingProgressTestingCompressedNormals.glb',
+        './diBuildingProgressTestingCompressedNormals.glb',
         // called when the resource is loaded
         function (draco) {
             const di = draco.scene;
@@ -363,12 +362,12 @@ function init() {
             console.log('An error happened');
         }
     );
-    gltfLoader.load('/yyy.glb', function (gltf) {
+    gltfLoader.load('./yyy.glb', function (gltf) {
         console.log(gltf.animations);
         anim = gltf.animations;
     });
 
-    gltfLoader.load('/michelle.glb', function (gltf) {
+    gltfLoader.load('./michelle.glb', function (gltf) {
         player = gltf.scene;
         // Clone or create new instances of the objects in the GLTF scene
         //clonedPlayer = gltf.scene.clone(); // Clone the entire scene
@@ -461,7 +460,7 @@ function init() {
         group.add(mesh);
     }
 
-    gltfLoader.load('/sign.glb', function (gltf) {
+    gltfLoader.load('./sign.glb', function (gltf) {
         const sign=gltf.scene;
         createInstance(sign, "ed7", 0, 0, 0);
         createInstance(sign, "ed2", 0, 10, 0);
