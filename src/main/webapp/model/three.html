@@ -1,0 +1,153 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link href="./styles/main.css" rel="stylesheet" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+  </head>
+  <body>
+    <!--<div id="loading-video" class="video-container">
+      <video  autoplay muted loop>
+        <source src="0001-0350.mp4" type="video/mp4" />
+      </video>
+    </div>-->
+    <title>AddcProject</title>
+    <div id="pop-up-buttons">
+      <button id="menu-button">Menu</button>
+      <button id="inventory-button">Inventory</button>
+      <button id="location-button">Location</button>
+      <button id="caracther-button">Characther</button>
+      <button id="events-button">Events</button>
+      <button id="myButton">Click Me</button>
+    </div>
+    <div id="info">
+      <div class="popup" id="event-popup">
+        <h1>Events</h1>
+        <h3>On going events:</h3>
+        <ul>
+          <li><a href="#">Option 1</a></li>
+        </ul>
+        <a class="close-popup" data-popup="menu-popup" href="#">Close</a>
+      </div>
+      <div class="popup" id="menu-popup">
+        <h2>Menu</h2>
+        <ul>
+          <li><a href="#">Option 1</a></li>
+          <li><a href="#">Option 2</a></li>
+          <li><a href="#">Option 3</a></li>
+        </ul>
+        <a class="close-popup" data-popup="menu-popup" href="#">Close</a>
+      </div>
+      <div class="popup" id="inventory-popup">
+        <h2>Inventory</h2>
+        <ul>
+          <li>Item 1</li>
+          <li>Item 2</li>
+          <li>Item 3</li>
+        </ul>
+        <a class="close-popup" data-popup="inventory-popup" href="#">Close</a>
+      </div>
+      <div class="popup" id="location-popup">
+        <h2>Location</h2>
+        <form>
+          <label for="input1">Input 1:</label>
+          <input type="text" id="input1" name="input1" placeholder="Enter value"><br>
+      
+          <label for="input2">Input 2:</label>
+          <input type="text" id="input2" name="input2" placeholder="Enter value"><br>
+      
+          <button id="submit-button">Submit</button>
+        </form>
+        <a class="close-popup" data-popup="location-popup" href="#">Close</a>
+      </div>
+      <div id="caracther-popup">
+        <a class="close-popup" data-popup="caracther-popup" href="#">Close</a>
+      </div>
+			
+		</div>
+    <script>
+      // Define the function to be executed when the button is clicked
+      function displayValue() {
+        const a="aa";
+        const b="33";
+        /*
+        fetch('https://fctconnect23.oa.r.appspot.com/rest/test/add', {
+            method: 'POST',
+            headers: {
+              'x-auth-token': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI1MDgxZjlkYi05Y2MwLTQ3NDctODI2NS00MmRiZjc3NjUwOWUiLCJzdWIiOiJ1c2VyMyIsImlhdCI6MTY4Njc2NDM5MCwiZXhwIjoxNjg2NzcxNTkwLCJyb2xlIjoiRU1QTE9ZRUUifQ.kz8TNMHLNRUquPTAPG6AqzY_FcUarF-qKlwwFymcZuRebRetDijQkaHQy2Q-aFKjjUk5N1eujd5-K9AsjhU_DQ',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              x: a,
+              y: b
+            })
+          })
+          .then(response => {
+            if (response.ok) {
+              console.log(response); // get the value of the Content-Type header
+              return response.json();
+            } else {
+              alert("Wrong credencials or account waiting for activation");
+            }
+          })
+          .then(data => {
+            // handle successful login
+            //console.log(data);
+            //var token = data.token;
+            //console.log(token);
+            //sessionStorage.setItem('authToken', token);
+            //sessionStorage.setItem('username', usernamee);
+            //window.location.href = '/index.html';
+            // save the token in localStorage or a cookie for later use
+          })
+          .catch(error => {
+            // handle login failure
+            alert(error.message);
+          });
+          */
+
+          fetch('https://fctconnect23.oa.r.appspot.com/rest/test/fetch', {
+            method: 'GET',
+            headers: {
+              'x-auth-token': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI1MDgxZjlkYi05Y2MwLTQ3NDctODI2NS00MmRiZjc3NjUwOWUiLCJzdWIiOiJ1c2VyMyIsImlhdCI6MTY4Njc2NDM5MCwiZXhwIjoxNjg2NzcxNTkwLCJyb2xlIjoiRU1QTE9ZRUUifQ.kz8TNMHLNRUquPTAPG6AqzY_FcUarF-qKlwwFymcZuRebRetDijQkaHQy2Q-aFKjjUk5N1eujd5-K9AsjhU_DQ'
+            }
+          })
+          .then(response => {
+            if (response.ok) {
+              console.log(response.body); // get the value of the Content-Type header
+              return response.json();
+            } else {
+              alert("Wrong credencials or account waiting for activation");
+            }
+          })
+          .then(data => {
+            console.log(data);
+          })
+          .catch(error => {
+            // handle login failure
+            alert(error.message);
+          });
+        }
+        
+      //localStorage.setItem('test_localStorage', 'haaaaa');
+      // Attach the function to the button's click event
+      var button = document.getElementById("myButton");
+      button.addEventListener("click", displayValue);
+    </script>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.150.1//examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./three.js">
+			
+		</script>
+    
+  </body>
+</html>

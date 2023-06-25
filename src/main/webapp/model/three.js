@@ -1,0 +1,836 @@
+//import * as THREE from 'https://unpkg.com/three@0.150.1/build/three.module.js';
+import * as THREE from 'three';
+//import { GLTFLoader } from "https://unpkg.com/three@0.150.1/examples/js/loaders/GLTFLoader.js";
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+//import { DRACOLoader } from "https://cdn.skypack.dev/three@0.125.0/examples/jsm/loaders/DRACOLoader";
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+var canvas, controls;
+var camera, scene, renderer, labelRenderer, ambientLight;
+var clock = new THREE.Clock();
+var updatables = [];
+
+var mixer;
+let player;
+var model;
+var particleSystem;
+var keyboard = {};
+let latestUserPosition = new THREE.Vector3();
+var oldPosition = new THREE.Vector3();
+let xzPlane;
+let gui, actions, face, activeAction, previousAction;
+const api = { state: 'boxing' };
+const pInit = { state: 'monster' };
+let anim;
+let gltfLoader;
+let cPointLabel;
+let group;
+let eventArray = [];
+var objectNameMap = {};
+init();
+/*
+if ('geolocation' in navigator) {
+  navigator.geolocation.watchPosition(function(position) {
+    var latitude = position.coords.latitude;
+    var longitude = position.coords.longitude;
+    console.log('Latitude: ' + latitude + ', Longitude: ' + longitude);
+  });
+} else {
+  console.log('Geolocation is not available.');
+}
+*/
+/*
+document.addEventListener('mousedown', (event) => {
+  const mouse = new THREE.Vector2(
+    (event.clientX / window.innerWidth) * 2 - 1,
+    -(event.clientY / window.innerHeight) * 2 + 1
+  );
+  //console.log(xzPlane.position);
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(mouse, camera);
+  raycaster.near = 0.1;
+  raycaster.far = 1000;
+      
+  const direction = raycaster.ray.direction.clone().multiplyScalar(1000); // Extend the line for visibility
+  const lineGeometry = new THREE.BufferGeometry().setFromPoints([camera.position, camera.position.clone().add(direction)]);
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+  const line = new THREE.Line(lineGeometry, lineMaterial);
+  scene.add(line);
+      
+  const intersects = raycaster.intersectObject(cube3);
+  console.log(intersects);
+  if (intersects.length > 0) {
+    const intersectionPoint = intersects[0];
+    console.log("facilll");
+    console.log(intersectionPoint);
+  }
+  
+});
+*/
+function myFunction(i){
+    console.log(eventArray[i]);
+}
+function eventHandler(building){
+    const eventPopup = document.getElementById('event-popup');
+    const h1Element = eventPopup.querySelector('#event-popup h1');
+    const ulElement = eventPopup.querySelector('#event-popup ul');
+    ulElement.innerHTML = '';
+    h1Element.textContent = building;
+                
+    for (let i = 0; i < eventArray.length; i++) {
+        if(eventArray[i].location==building||building=="ALL"){
+            console.log("yesss");
+            const option1 = document.createElement('li');
+            const option1Link = document.createElement('a');
+            option1Link.href = '#';
+            option1Link.addEventListener('click', function() {
+                myFunction(i);
+                });
+            option1Link.textContent = eventArray[i].name;
+            option1.appendChild(option1Link);
+            ulElement.appendChild(option1);
+        }  
+    }
+    showPopup(eventPopup);
+}  
+document.addEventListener('mousedown', (event) => {
+    const mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    //console.log(xzPlane.position);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.near = 0.1;
+    raycaster.far = 1000;
+        
+    const intersects = raycaster.intersectObject(group, true);
+    console.log(intersects);
+    if (intersects.length > 0) {
+        //p.textContent='lalala';
+        console.log(intersects[0].object.name);
+        //const eventPopup = document.getElementById('event-popup');
+        //const h1Element = eventPopup.querySelector('#event-popup h1');
+        //const ulElement = eventPopup.querySelector('#event-popup ul');
+        switch(intersects[0].object.name){
+            case 'ed7':
+                eventHandler("ED7");
+                break;
+            case 'ed2':
+                eventHandler("ED2");
+                break;
+            default:
+                break;
+
+        }
+
+    }
+    
+  });
+// Function to show a pop-up
+function showPopup(popup) {
+    canvas.style.display = 'block';
+    popup.style.display = 'block';
+}
+
+function showThreePopup(popup) {
+    canvas.style.display = 'block';
+    popup.style.display = 'block';
+    
+    const caractherPopup = document.getElementById('caracther-popup');
+    //caractherPopup.style.boxSizing = 'border-box';
+    // Create a scene
+    const scene = new THREE.Scene();
+
+    // Create a camera
+    const camera = new THREE.PerspectiveCamera(75, caractherPopup.clientWidth / caractherPopup.clientHeight, 0.1, 1000);
+    camera.position.z = 3;
+    camera.position.y = 1;
+
+    // Create a renderer
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(caractherPopup.clientWidth, caractherPopup.clientHeight);
+    caractherPopup.appendChild(renderer.domElement);
+    
+    const gltfLoader2 = new GLTFLoader();
+    gltfLoader2.load('/monster.glb', function (gltf) {
+        const player2 = gltf.scene;
+        scene.add(player2);
+    });
+    
+    // Create ambient light
+    const ambientLight = new THREE.HemisphereLight(
+        'white',
+        'darkslategrey',
+        6,
+    );
+    ambientLight.position.set(0, 10, 0);
+    scene.add(ambientLight);
+
+    // Create directional light
+    const directionalLight = new THREE.DirectionalLight('white', 7);
+    directionalLight.position.set(0, 5, 2);
+    scene.add(directionalLight);
+    const controls2 = new OrbitControls(camera, renderer.domElement);
+    controls2.target.set(0, 1, 0);
+
+    // Animation loop
+    function animate() {
+    requestAnimationFrame(animate);
+    //cube.rotation.x += 0.01;
+    //cube.rotation.y += 0.01;
+    renderer.render(scene, camera);
+    }
+    animate();
+    
+    
+}
+
+
+function init() {
+    fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
+            method: 'GET',
+            headers: {
+              'x-auth-token': 'Bearer ***REMOVED***'
+            }
+          })
+          .then(response => {
+            if (response.ok) {
+              console.log(response.body); // get the value of the Content-Type header
+              return response.json();
+            } else {
+              alert("not able to get events");
+            }
+          })
+          .then(data => {
+            eventArray=data;
+            console.log("arayy de evnetosssss");
+            console.log(eventArray);
+          })
+          .catch(error => {
+            // handle login failure
+            alert(error.message);
+          });
+    //const loadingVideo = document.getElementById('loading-video');
+    canvas = document.getElementById('info');
+    //const popups = document.querySelectorAll('.popup');
+    //const closePopups = document.querySelectorAll('.close-popup');
+    const menuPopup = document.getElementById('menu-popup');
+    const inventoryPopup = document.getElementById('inventory-popup');
+    const locationPopup = document.getElementById('location-popup');
+    const caractherPopup = document.getElementById('caracther-popup');
+    //const eventsPopup = document.getElementById('event-popup');
+    //const popups = document.querySelectorAll('.popup');
+    const closePopups = document.querySelectorAll('.close-popup');
+    console.log(closePopups);
+    // Add event listener to open the menu pop-up
+    document.getElementById('menu-button').addEventListener('click', () => showPopup(menuPopup));
+    document.getElementById('inventory-button').addEventListener('click', () => showPopup(inventoryPopup));
+    document.getElementById('location-button').addEventListener('click', () => showPopup(locationPopup));
+    document.getElementById('caracther-button').addEventListener('click', () => showThreePopup(caractherPopup));
+    document.getElementById('events-button').addEventListener('click', () => eventHandler("ALL"));
+    const submitButton = document.getElementById('submit-button');
+    // Add event listener to close all pop-ups
+    //closePopups.forEach(closePopup => closePopup.addEventListener('click', hidePopups()));
+    
+    closePopups.forEach(closePopup => {
+        closePopup.addEventListener('click', function(event) {
+          event.preventDefault();
+          const popupId = this.getAttribute('data-popup');
+          console.log(popupId);
+          const popup = document.getElementById(popupId);
+          console.log(popup);
+          // Now you have access to the popup ID and the corresponding popup element
+          // You can perform additional actions based on the specific popup being closed
+          canvas.style.display = 'none';
+          popup.style.display = 'none'; // Hide the popup
+        });
+      });
+    submitButton.addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent form submission
+      
+        const input1Value = parseFloat(document.getElementById('input1').value);
+        const input2Value = parseFloat(document.getElementById('input2').value);
+        const x=(input2Value + 9.20575) / 0.0000117094;
+        const z=-(input1Value - 38.66102) / 0.00000333333;
+        latestUserPosition = new THREE.Vector3(x, 0, z);
+    });
+    // Note: You can also add this event listener to close the pop-ups when clicking outside the pop-up area
+    //canvas.addEventListener('click', hidePopups);
+    
+    document.body.appendChild(canvas);
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
+    // Set the minimum and maximum polar angles
+    controls.minPolarAngle = 0;            // The minimum angle (in radians)
+    controls.maxPolarAngle = Math.PI / 2;  // The maximum angle (in radians)
+    controls.enablePan = false;
+	controls.enableDamping = true;
+
+    // Disable rotation and enable vertical panning
+    //controls.enableRotate = false;
+    //controls.enablePan = true;
+    //controls.screenSpacePanning = true;
+
+
+    ambientLight = new THREE.HemisphereLight(
+        'white',
+        'darkslategrey',
+        3,
+    );
+
+    new RGBELoader()
+        .load('/puresky.hdr', function (texture) {
+
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+
+            scene.background = texture;
+            scene.environment = texture;
+
+        });
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    gltfLoader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    dracoLoader.setDecoderConfig({ type: 'js' });
+    gltfLoader.setDRACOLoader(dracoLoader);
+    gltfLoader.load(
+        // resource URL
+        '/compressedFinalDraco.glb',
+        // called when the resource is loaded
+        function (draco) {
+            model = draco.scene;
+            /*
+            draco.scene.traverse(function (object) {
+
+                if (object.isMesh) object.castShadow = true;
+
+            });*/
+            updatables.push(model);
+            scene.add(model);
+            console.log(draco);
+        },
+        // called while loading is progressing
+        function (xhr) {
+
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+
+        },
+        // called when loading has errors
+        function (error) {
+
+            console.log('An error happened');
+        }
+    );
+    gltfLoader.load(
+        // resource URL
+        '/diBuildingProgressTestingCompressedNormals.glb',
+        // called when the resource is loaded
+        function (draco) {
+            const di = draco.scene;
+            di.scale.set(0.7, 0.7, 0.7);
+            di.position.set(225, 20, -15);
+            // Rotate the model
+            const rotationAxis = new THREE.Vector3(0, 1, 0); // Adjust the axis as needed
+            const rotationAngle = Math.PI / 1.35; // Adjust the angle as needed
+            di.rotateOnAxis(rotationAxis, rotationAngle);
+            scene.add(di);
+            console.log(draco);
+        },
+        // called while loading is progressing
+        function (xhr) {
+
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+
+        },
+        // called when loading has errors
+        function (error) {
+
+            console.log('An error happened');
+        }
+    );
+    gltfLoader.load('/yyy.glb', function (gltf) {
+        console.log(gltf.animations);
+        anim = gltf.animations;
+    });
+
+    gltfLoader.load('/michelle.glb', function (gltf) {
+        player = gltf.scene;
+        // Clone or create new instances of the objects in the GLTF scene
+        //clonedPlayer = gltf.scene.clone(); // Clone the entire scene
+        const skeleton = new THREE.SkeletonHelper( gltf.scene );
+        const bones = skeleton.bones;
+        //console.log(gltf.scene);
+
+        //loop through all the bones and log their names
+        bones.forEach( ( bone ) => {
+        console.log( bone.name );
+        } );
+        //mixer = new THREE.AnimationMixer( monster );
+        //mixer.clipAction( anim ).play();
+        createUltimate(anim);
+        scene.add(player);
+        /*
+        // create a bone for your cosmetic
+        const cosmeticBone = new THREE.Bone();
+    
+        // set the position and rotation of your cosmetic bone relative to your character's bone
+        //cosmeticBone.position.set(x, y, z);
+        //cosmeticBone.rotation.set(rx, ry, rz);
+    
+        // find the bone you want to attach the cosmetic to
+        const boneToAttach = monster.getObjectByName('mixamorigLeftHand');
+    
+        // add your cosmetic bone to the bone you want to attach it to
+        boneToAttach.add(cosmeticBone);
+    
+        // create a group to hold your cosmetic mesh
+        const cosmeticGroup = new THREE.Group();
+    
+        // load your cosmetic mesh
+        gltfLoader.load('/pa.glb', function(cosmeticGltf) {
+          const cosmetic = cosmeticGltf.scene;
+          
+          // add your cosmetic mesh to the cosmetic group
+          cosmeticGroup.add(cosmetic);
+          
+          // set the position and rotation of your cosmetic mesh relative to your cosmetic bone
+          //cosmetic.position.set(x, y, z);
+          //cosmetic.rotation.set(rx, ry, rz);
+        });
+    
+        // add your cosmetic group to the scene
+        scene.add(cosmeticGroup);
+        */
+
+    });
+
+    //const mainLight = new THREE.DirectionalLight('white', 6);
+    //mainLight.position.set(10, 10, 10);
+    ambientLight.position.set(0, 100, 0)
+    scene.add(ambientLight);
+    //scene.add( mainLight );
+    /*
+    // Create a cube geometry
+    var geometry3 = new THREE.BoxGeometry(1, 1, 1);
+
+    // Create a green material
+    var material3 = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+    // Create a cube mesh using the geometry and material
+    cube3 = new THREE.Mesh(geometry3, material3);
+    scene.add(cube3);
+    cube3.position.set(0, 10, 0);
+    */
+    labelRenderer=new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position='absolute';
+    //labelRenderer.domElement.style.zIndex='1100';
+    labelRenderer.domElement.style.top='0px';
+    labelRenderer.domElement.style.pointerEvents='none';
+    document.body.appendChild(labelRenderer.domElement);
+
+    group= new THREE.Group();
+    const signGroup= new THREE.Group();
+    
+    function createInstance(sign, name, x, y, z) {
+        const modelPlaca = sign.clone();
+        modelPlaca.position.set(x, y, z);
+        signGroup.add(modelPlaca);
+
+        const geo= new THREE.SphereGeometry(2.2);
+        //const mat= new THREE.MeshBasicMaterial({color: 0xFF0000});
+        const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+        const mesh= new THREE.Mesh(geo,mat);
+        mesh.position.set(x, y+2, z);
+        mesh.name= name;
+        group.add(mesh);
+    }
+
+    gltfLoader.load('/sign.glb', function (gltf) {
+        const sign=gltf.scene;
+        createInstance(sign, "ed7", 0, 0, 0);
+        createInstance(sign, "ed2", 0, 10, 0);
+    });
+    scene.add(signGroup);
+    scene.add(group);
+    
+    /*
+    function createCpointMesh(name, x, y, z){
+        const geo= new THREE.SphereBufferGeometry(0.4);
+        const mat= new THREE.MeshBasicMaterial({color: 0xFF0000});
+        const mesh= new THREE.Mesh(geo,mat);
+        mesh.position.set(x, y, z);
+        mesh.name= name;
+        return mesh;
+    }
+    group= new THREE.Group();
+    const SphereMesh1= createCpointMesh('ed7', 0, 0, 0);
+    group.add(SphereMesh1);
+    const SphereMesh2= createCpointMesh('ed2', 0, 10, 5);
+    group.add(SphereMesh2);
+    scene.add(group);
+    */
+
+
+    /*
+    p =document.createElement('span');
+    p.className='title';
+    const pContainer=document.createElement('div');
+    
+    pContainer.className='card__content';
+    pContainer.appendChild(p);
+    const pContainer2=document.createElement('div');
+    pContainer2.className='card';
+    pContainer2.appendChild(pContainer);
+    cPointLabel=new CSS2DObject(pContainer2);
+    //scene.add(cPointLabel);
+    //cPointLabel.position.set(0, 5, 0);
+    p.textContent='Kroben';
+    */
+
+    
+    const p =document.createElement('p');
+    p.textContent='Kroben';
+    cPointLabel=new CSS2DObject(p);
+    scene.add(cPointLabel);
+    console.log(cPointLabel);
+    
+
+    /*
+    // Create a circle geometry
+    var circleRadius = 4;
+    var circleSegments = 32;
+    var circleGeometry = new THREE.CircleGeometry(circleRadius, circleSegments);
+    // Create a particle system
+    particleSystem = new THREE.Points(circleGeometry);
+
+    // Create a particle material
+    var materialC = new THREE.PointsMaterial({
+        size: 0.4,
+        color: 0x800080,
+        map: new THREE.TextureLoader().load('particle.png'),
+        transparent: true,
+    });
+
+    // Assign the material to the particle system
+    particleSystem.material = materialC;
+    particleSystem.rotation.x = Math.PI / 2;
+    // Add the particle system to the scene
+    scene.add(particleSystem);
+    */
+   
+   
+    // Calculate the width and height of the map in latitude and longitude units
+    var mapLatRange = 38.66380 - 38.65839;
+    var mapLngRange = -9.20225 - (-9.20925);
+
+    /*
+    const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x191970, side: THREE.DoubleSide });
+    material.raycast = true;
+    xzPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+    xzPlane.rotation.x = -Math.PI / 2; // Rotate the plane so that it lies flat on the xz plane
+    scene.add(xzPlane);
+    //console.log(xzPlane);
+    
+    //xzPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    //scene.add(xzPlane);
+    */
+
+
+    // Set the player's initial position
+    //player.position.x = (-9.20322+9.20575)/0.0000117094;impp
+    //player.position.y = 0;impp
+    //player.position.z = -(38.66101-38.66102)/0.00000333333;impp
+    //controls.target.set(100, 10, 0);
+    //controls.target.copy(player.position);
+    //camera.position.set(80, 10, 0);
+    //latestUserPosition.copy(player.position);impp
+    //controls.target.copy(player.position);impp
+    //oldPosition.copy( player.position );
+
+    // Set up the keyboard controls for player movement
+
+    function onKeyDown(event) {
+        keyboard[event.code] = true;
+    }
+    function onKeyUp(event) {
+        keyboard[event.code] = false;
+    }
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    /*
+    // After loading is complete
+    setTimeout(() => {
+        loadingVideo.style.display = 'none'; // Hide the loading video
+    }, 10000); // Adjust the delay time (in milliseconds) as needed
+    */
+
+}
+
+function animate() {
+
+    // Check for collisions between the player and the 3D model
+    /*
+    var playerBox = new THREE.Box3().setFromObject( player );
+    var modelBox = new THREE.Box3().setFromObject(model);
+    if ( playerBox.intersectsBox( modelBox ) ) {
+      // If there is a collision, move the player back to its previous position
+      player.position.copy( oldPosition );
+    }
+    else {
+      */
+    // If there is no collision, update the player's position based on keyboard input
+    if (keyboard['KeyW']) {
+        player.position.z -= 0.3;
+    }
+    if (keyboard['KeyS']) {
+        player.position.z += 0.3;
+    }
+    if (keyboard['KeyA']) {
+        player.position.x -= 0.3;
+    }
+    if (keyboard['KeyD']) {
+        player.position.x += 0.3;
+    }
+
+    if (keyboard['KeyT']) {
+        //player.position.set(0, 0, 0);
+        latestUserPosition.set(0, 0, 0);
+
+    }
+    if (keyboard['KeyU']) {
+
+    }
+
+    if (player) { // Make sure characterMesh is defined
+        const direction = new THREE.Vector3().subVectors(latestUserPosition, player.position);
+        player.position.add(direction.normalize().multiplyScalar(0.1));
+        //console.log(player.position);
+        player.lookAt(player.position.clone().add(direction));
+        controls.target.copy(player.position);
+        cPointLabel.position.copy(player.position);
+        cPointLabel.position.y=3;
+    }
+    var time = Date.now() * 0.001;
+    // Rotate the particle system
+    //particleSystem.position.y += Math.sin(time)*0.1;
+
+    // Update the particles
+    //particleSystem.geometry.verticesNeedUpdate = true;
+    controls.update();
+
+    //tick();
+    const dt = clock.getDelta();
+
+    if (mixer) mixer.update(dt);
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+}
+function createUltimate(animations) {
+    player.position.x = (-9.20348 + 9.20575) / 0.0000117094;
+    player.position.y = 0;
+    player.position.z = -(38.66113 - 38.66102) / 0.00000333333;
+    latestUserPosition.copy(player.position);
+    controls.target.copy(player.position);
+
+    const states = ['boxing', 'capoeira'];
+    const players = ['monster.glb', 'michelle.glb'];
+
+    gui = new GUI();
+
+    mixer = new THREE.AnimationMixer(player);
+
+    actions = {};
+
+
+    for (let i = 0; i < animations.length; i++) {
+        const clip = animations[i];
+        const action = mixer.clipAction(clip);
+        actions[clip.name] = action;
+    }
+
+    // states
+
+    const statesFolder = gui.addFolder('Emotes');
+    const clipCtrl = statesFolder.add(api, 'state').options(states);
+    const pFolder = gui.addFolder('Personagens');
+    const playersF = pFolder.add(pInit, 'state').options(players);
+
+    clipCtrl.onChange(function () {
+        fadeToAction(api.state, 0.5);
+    });
+    
+    playersF.onChange(function () {
+        scene.remove(player);
+        gltfLoader.load(pInit.state, function (gltf) {
+            player = gltf.scene;
+            createUltimate(animations);
+            scene.add(player);
+           
+        });
+    });
+    
+    activeAction = actions['boxing'];
+    activeAction.play();
+    statesFolder.open();
+    pFolder.open();
+
+}
+
+/*
+function createGUI(player, animations) {
+    //player.position.y = 5;
+    //console.log(player.position.y);
+    player.position.x = (-9.20322 + 9.20575) / 0.0000117094;
+    player.position.y = 0;
+    player.position.z = -(38.66101 - 38.66102) / 0.00000333333;
+    latestUserPosition.copy(player.position);
+    controls.target.copy(player.position);
+
+    const states = ['Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing'];
+    const emotes = ['Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp'];
+
+    gui = new GUI();
+
+    mixer = new THREE.AnimationMixer(player);
+
+    actions = {};
+
+    for (let i = 0; i < animations.length; i++) {
+
+        const clip = animations[i];
+        const action = mixer.clipAction(clip);
+        actions[clip.name] = action;
+
+        if (emotes.indexOf(clip.name) >= 0 || states.indexOf(clip.name) >= 4) {
+
+            action.clampWhenFinished = true;
+            action.loop = THREE.LoopOnce;
+
+        }
+
+    }
+
+    const statesFolder = gui.addFolder('States');
+
+    const clipCtrl = statesFolder.add(api, 'state').options(states);
+
+    clipCtrl.onChange(function () {
+        fadeToAction(api.state, 0.5);
+
+    });
+
+    statesFolder.open();
+
+    // emotes
+
+    const emoteFolder = gui.addFolder('Emotes');
+
+    function createEmoteCallback(name) {
+
+        api[name] = function () {
+
+            fadeToAction(name, 0.2);
+
+            mixer.addEventListener('finished', restoreState);
+
+        };
+
+        emoteFolder.add(api, name);
+
+    }
+
+    function restoreState() {
+
+        mixer.removeEventListener('finished', restoreState);
+
+        fadeToAction(api.state, 0.2);
+
+    }
+
+    for (let i = 0; i < emotes.length; i++) {
+
+        createEmoteCallback(emotes[i]);
+
+    }
+
+    emoteFolder.open();
+
+    // expressions
+
+    face = player.getObjectByName('Head_4');
+
+    const expressions = Object.keys(face.morphTargetDictionary);
+    const expressionFolder = gui.addFolder('Expressions');
+
+    for (let i = 0; i < expressions.length; i++) {
+
+        expressionFolder.add(face.morphTargetInfluences, i, 0, 1, 0.01).name(expressions[i]);
+
+    }
+
+    activeAction = actions['Walking'];
+    activeAction.play();
+
+    expressionFolder.open();
+
+}
+*/
+function fadeToAction(name, duration) {
+    previousAction = activeAction;
+    activeAction = actions[name];
+
+    if (previousAction !== activeAction) {
+
+        previousAction.fadeOut(duration);
+
+    }
+
+    activeAction
+        .reset()
+        .setEffectiveTimeScale(1)
+        .setEffectiveWeight(1)
+        .fadeIn(duration)
+        .play();
+
+}
+window.onresize = function () {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+};
+function tick() {
+    // only call the getDelta function once per frame!
+    const delta = clock.getDelta();
+    const elapsedTime = clock.getElapsedTime();
+
+    // console.log(
+    //   The last frame rendered in ${delta * 1000} milliseconds,
+    // );
+
+    for (const object of updatables) {
+        object.tick(delta, elapsedTime);
+    }
+}
+
+animate();
