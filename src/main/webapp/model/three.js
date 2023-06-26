@@ -30,7 +30,6 @@ let gltfLoader;
 let cPointLabel;
 let group;
 let eventArray = [];
-var objectNameMap = {};
 init();
 /*
 if ('geolocation' in navigator) {
@@ -192,10 +191,12 @@ function showThreePopup(popup) {
 
 
 function init() {
+    const authToken = localStorage.getItem("authToken");
+    alert("LocalStorage: " + authToken);
     fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
             method: 'GET',
             headers: {
-              'x-auth-token': 'Bearer ***REMOVED***'}
+              'x-auth-token': 'Bearer ' + authToken}
           })
           .then(response => {
             if (response.ok) {
