@@ -1,3 +1,3 @@
 # FCTConnect_Server
 
-[App Website](https://fctconnect.netlify.app/#/){:target="_blank"}
+<a href="https://fctconnect.netlify.app/#/" target="_blank">App Website</a>
