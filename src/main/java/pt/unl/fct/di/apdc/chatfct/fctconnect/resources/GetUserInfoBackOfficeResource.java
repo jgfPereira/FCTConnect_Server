@@ -6,9 +6,9 @@ import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 public class GetUserInfoBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(GetUserInfoBackOfficeResource.class.getName());
+    private static final String USERNAME_PATH_PARAM = "username";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
@@ -29,10 +30,9 @@ public class GetUserInfoBackOfficeResource {
     public GetUserInfoBackOfficeResource() {
     }
 
-    @POST
+    @GET
     @Path("/regularuser")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doGetRegularUserInfo(BackOfficeGetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doGetRegularUserInfo(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get regular user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -41,12 +41,12 @@ public class GetUserInfoBackOfficeResource {
         }
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
-        final Response checkData = checkData(data);
+        final Response checkData = checkData(otherUsername);
         if (checkData != null) {
             return checkData;
         }
         Key usernameKey = backOfficeUserKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.username);
+        Key otherKey = userKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
             Entity usernameOnDB = txn.get(usernameKey);
@@ -62,7 +62,7 @@ public class GetUserInfoBackOfficeResource {
                 return checkAccountState;
             }
             final String otherRole = getUserRole(otherOnDB);
-            final Key specificUserKey = getSpecificUserKey(data.username, otherRole);
+            final Key specificUserKey = getSpecificUserKey(otherUsername, otherRole);
             final Entity specificUserOnDB = txn.get(specificUserKey);
             final Response resp = getUserInfo(otherOnDB, specificUserOnDB, otherRole);
             txn.commit();
@@ -80,12 +80,12 @@ public class GetUserInfoBackOfficeResource {
         }
     }
 
-    private Response checkData(BackOfficeGetUserInfoData data) {
-        final boolean check = data != null && data.validateData();
-        if (!check) {
-            LOG.fine("Invalid data: at least one required field is null");
+    private Response checkData(String otherUsername) {
+        if (otherUsername == null || otherUsername.isBlank()) {
+            LOG.fine("Invalid data: username is invalid");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
         }
-        return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+        return null;
     }
 
     private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
@@ -119,10 +119,9 @@ public class GetUserInfoBackOfficeResource {
         }
     }
 
-    @POST
+    @GET
     @Path("/backofficeuser")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doGetBackOfficeUserInfo(BackOfficeGetUserInfoData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doGetBackOfficeUserInfo(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get another back office user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -132,12 +131,12 @@ public class GetUserInfoBackOfficeResource {
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
         final String role = tokenInfo.getRole();
-        final Response checkData = checkData(data);
+        final Response checkData = checkData(otherUsername);
         if (checkData != null) {
             return checkData;
         }
         Key usernameKey = backOfficeUserKeyFactory.newKey(username);
-        Key otherKey = backOfficeUserKeyFactory.newKey(data.username);
+        Key otherKey = backOfficeUserKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
             Entity usernameOnDB = txn.get(usernameKey);

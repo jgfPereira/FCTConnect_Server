@@ -3,12 +3,15 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeRolePermissions;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -23,6 +26,7 @@ import java.util.logging.Logger;
 public class RemoveBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(RemoveBackOfficeResource.class.getName());
+    private static final String USERNAME_PATH_PARAM = "username";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
@@ -31,10 +35,9 @@ public class RemoveBackOfficeResource {
     public RemoveBackOfficeResource() {
     }
 
-    @POST
+    @DELETE
     @Path("/regularuser")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRemoveRegularUser(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doRemoveRegularUser(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to remove regular user");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -44,12 +47,12 @@ public class RemoveBackOfficeResource {
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
         final String usernameRole = tokenInfo.getRole();
-        final Response checkData = checkData(data);
+        final Response checkData = checkData(otherUsername);
         if (checkData != null) {
             return checkData;
         }
         Key usernameKey = backOfficeUserKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.removedUsername);
+        Key otherKey = userKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
             Entity usernameOnDB = txn.get(usernameKey);
@@ -59,7 +62,7 @@ public class RemoveBackOfficeResource {
                 txn.rollback();
                 return checkUsersOnDB;
             }
-            final Response checkRemovePermissions = checkRemoveRegularUserPermissions(usernameRole, data.removedUsername);
+            final Response checkRemovePermissions = checkRemoveRegularUserPermissions(usernameRole, otherUsername);
             if (checkRemovePermissions != null) {
                 txn.rollback();
                 return checkRemovePermissions;
@@ -70,9 +73,9 @@ public class RemoveBackOfficeResource {
                 return checkAccountState;
             }
             final String otherRole = getOtherRole(otherOnDB);
-            Key specificUserKey = getSpecificUserKey(data.removedUsername, otherRole);
+            Key specificUserKey = getSpecificUserKey(otherUsername, otherRole);
             txn.delete(specificUserKey);
-            Key loginRegistryKey = getLoginRegistryKey(data.removedUsername);
+            Key loginRegistryKey = getLoginRegistryKey(otherUsername);
             Entity loginRegistry = txn.get(loginRegistryKey);
             final boolean isLoginRegistryOnDB = checkLoginRegistryOnDB(loginRegistry);
             if (isLoginRegistryOnDB) {
@@ -84,7 +87,7 @@ public class RemoveBackOfficeResource {
             }
             txn.delete(otherKey);
             txn.commit();
-            LOG.fine("Remove done: " + data.removedUsername);
+            LOG.fine("Remove done: " + otherUsername);
             return Response.ok(gson.toJson("Remove done")).build();
         } catch (Exception e) {
             txn.rollback();
@@ -98,10 +101,10 @@ public class RemoveBackOfficeResource {
         }
     }
 
-    private Response checkData(RemoveData data) {
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: at least one field is null");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - Invalid data")).build();
+    private Response checkData(String otherUsername) {
+        if (otherUsername == null || otherUsername.isBlank()) {
+            LOG.fine("Invalid data: id is invalid");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
         }
         return null;
     }
@@ -168,10 +171,9 @@ public class RemoveBackOfficeResource {
         }
     }
 
-    @POST
+    @DELETE
     @Path("/backofficeuser")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response doRemoveBackOfficeUser(RemoveData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response doRemoveBackOfficeUser(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to remove another back office user");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
@@ -181,12 +183,12 @@ public class RemoveBackOfficeResource {
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
         final String usernameRole = tokenInfo.getRole();
-        final Response checkData = checkData(data);
+        final Response checkData = checkData(otherUsername);
         if (checkData != null) {
             return checkData;
         }
         Key usernameKey = backOfficeUserKeyFactory.newKey(username);
-        Key otherKey = backOfficeUserKeyFactory.newKey(data.removedUsername);
+        Key otherKey = backOfficeUserKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
             Entity usernameOnDB = txn.get(usernameKey);
@@ -197,7 +199,7 @@ public class RemoveBackOfficeResource {
                 return checkUsersOnDB;
             }
             final String otherRole = getOtherRole(otherOnDB);
-            final Response checkRemovePermissions = checkRemoveBackOfficeUserPermissions(data, username, usernameRole, otherRole);
+            final Response checkRemovePermissions = checkRemoveBackOfficeUserPermissions(otherUsername, username, usernameRole, otherRole);
             if (checkRemovePermissions != null) {
                 txn.rollback();
                 return checkRemovePermissions;
@@ -209,7 +211,7 @@ public class RemoveBackOfficeResource {
             }
             txn.delete(otherKey);
             txn.commit();
-            LOG.fine("Remove done: " + data.removedUsername);
+            LOG.fine("Remove done: " + otherUsername);
             return Response.ok(gson.toJson("Remove done")).build();
         } catch (Exception e) {
             txn.rollback();
@@ -223,10 +225,10 @@ public class RemoveBackOfficeResource {
         }
     }
 
-    private Response checkRemoveBackOfficeUserPermissions(RemoveData data, String username, String usernameRole, String otherRole) {
-        if (!BackOfficeRolePermissions.canRemoveBackOfficeUser(data, username, usernameRole, otherRole)) {
-            LOG.fine("Dont have permission to remove back office user " + data.removedUsername);
-            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove back office user " + data.removedUsername)).build();
+    private Response checkRemoveBackOfficeUserPermissions(String otherUsername, String username, String usernameRole, String otherRole) {
+        if (!BackOfficeRolePermissions.canRemoveBackOfficeUser(otherUsername, username, usernameRole, otherRole)) {
+            LOG.fine("Dont have permission to remove back office user " + otherUsername);
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - Dont have permission to remove back office user " + otherUsername)).build();
         }
         return null;
     }
