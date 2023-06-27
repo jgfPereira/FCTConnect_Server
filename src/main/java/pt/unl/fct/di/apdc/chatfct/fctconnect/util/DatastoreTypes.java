@@ -1,5 +1,7 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
+import java.util.Arrays;
+
 public final class DatastoreTypes {
 
     public static final String PROJECT_ID = "fctconnect23";
@@ -71,6 +73,7 @@ public final class DatastoreTypes {
     public static final String LOCATIONS_TYPE = "Locations";
     public static final String LOCATIONS_TYPE_KEY = "uniPlaces";
     public static final String LOCATIONS_PLACES_ATTR = "places";
+    private static final int ACL_REST_START_INDEX = 1;
 
     private DatastoreTypes() {
     }
@@ -79,5 +82,13 @@ public final class DatastoreTypes {
         StringBuilder sb = new StringBuilder(role.toLowerCase());
         sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
         return sb.toString();
+    }
+
+    public static String[] getAclRest(String[] acl) {
+        return Arrays.copyOfRange(acl, ACL_REST_START_INDEX, acl.length);
+    }
+
+    public static String getAclFirst(String[] acl) {
+        return acl[0];
     }
 }

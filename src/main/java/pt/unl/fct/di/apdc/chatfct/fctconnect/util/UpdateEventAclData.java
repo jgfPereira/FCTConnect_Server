@@ -11,4 +11,9 @@ public class UpdateEventAclData {
     public boolean validateData() {
         return !(id == null || tag == null);
     }
+
+    public boolean validateAclTag() {
+        tag = tag.toUpperCase().trim();
+        return tag.matches(RegexExp.ROLE_REGEX);
+    }
 }

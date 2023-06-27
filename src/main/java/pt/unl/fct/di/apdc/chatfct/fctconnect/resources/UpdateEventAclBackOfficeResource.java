@@ -32,9 +32,10 @@ public class UpdateEventAclBackOfficeResource {
     }
 
     @PUT
+    @Path("/addtag")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response doUpdateEvent(UpdateEventData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("Backoffice user attempt to update event acl");
+    public Response doAddEventAclTag(UpdateEventAclData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Backoffice user attempt to update event acl - adding tag");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
@@ -47,7 +48,6 @@ public class UpdateEventAclBackOfficeResource {
         if (checkData != null) {
             return checkData;
         }
-        data.removeDuplicates();
         Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
@@ -69,14 +69,11 @@ public class UpdateEventAclBackOfficeResource {
                 txn.rollback();
                 return checkEventOnDB;
             }
-            final List<String> invalidFormatUpdates = new ArrayList<>();
-            final Entity updatedEvent = updateEvent(eventOnDB, data, invalidFormatUpdates);
-            if (didEventChanged(invalidFormatUpdates, data.updateEntries)) {
-                txn.update(updatedEvent);
-            }
+            final Entity updatedEvent = addAclTag(eventOnDB, data);
+            txn.update(updatedEvent);
             txn.commit();
-            LOG.info("Event was updated - if format checked out");
-            return createResponseBasedOnUpdates(data, invalidFormatUpdates);
+            LOG.info("ACL tag was added to event");
+            return Response.ok(gson.toJson("ACL tag was added - " + data.tag)).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -89,10 +86,13 @@ public class UpdateEventAclBackOfficeResource {
         }
     }
 
-    private Response checkData(UpdateEventData data) {
+    private Response checkData(UpdateEventAclData data) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one required field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
+        } else if (!data.validateAclTag()) {
+            LOG.fine("Invalid data: unrecognized acl tag");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized acl tag")).build();
         }
         return null;
     }
@@ -120,6 +120,24 @@ public class UpdateEventAclBackOfficeResource {
             return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - Event does not exist")).build();
         }
         return null;
+    }
+
+    private Entity addAclTag(Entity event, UpdateEventAclData data) {
+        Entity.Builder eb = Entity.newBuilder(event);
+        final List<String> currAcl = getCurrentAcl(event);
+        currAcl.add(data.tag);
+        final String[] updatedAcl = currAcl.toArray(new String[currAcl.size()]);
+        eb.set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(DatastoreTypes.getAclFirst(updatedAcl), DatastoreTypes.getAclRest(updatedAcl)));
+        return eb.build();
+    }
+
+    private List<String> getCurrentAcl(Entity eventOnDB) {
+        List<Value<?>> list = eventOnDB.getList(DatastoreTypes.EVENT_ACL_ATTR);
+        List<String> res = new ArrayList<>();
+        for (Value<?> v : list) {
+            res.add((String) v.get());
+        }
+        return res;
     }
 
     private TokenInfo verifyToken(final String token) {
