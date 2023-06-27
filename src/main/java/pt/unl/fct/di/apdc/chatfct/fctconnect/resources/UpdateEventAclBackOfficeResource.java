@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 public class UpdateEventAclBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(UpdateEventAclBackOfficeResource.class.getName());
+    private static final int ONE_TAG_COUNT = 1;
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
@@ -152,5 +153,92 @@ public class UpdateEventAclBackOfficeResource {
             LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
             return null;
         }
+    }
+
+    @PUT
+    @Path("/removetag")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response doRemoveEventAclTag(UpdateEventAclData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("Backoffice user attempt to update event acl - removing tag");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final String role = tokenInfo.getRole();
+        final Response checkData = checkData(data);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key backOfficeUserKey = backOfficeUserKeyFactory.newKey(username);
+        Key eventKey = eventKeyFactory.newKey(data.id);
+        Transaction txn = datastore.newTransaction();
+        try {
+            final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
+            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
+            if (checkBackOfficeUserOnDB != null) {
+                txn.rollback();
+                return checkBackOfficeUserOnDB;
+            }
+            final Response canUpdateEvent = canUpdateEvent(role);
+            if (canUpdateEvent != null) {
+                txn.rollback();
+                return canUpdateEvent;
+            }
+            final Entity eventOnDB = txn.get(eventKey);
+            final Response checkEventOnDB = checkEventOnDB(eventOnDB);
+            if (checkEventOnDB != null) {
+                txn.rollback();
+                return checkEventOnDB;
+            }
+            final Response resp = removeAclTag(txn, eventOnDB, data);
+            txn.commit();
+            return resp;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
+
+    private boolean isEventOneTagOnly(Entity eventOnDB) {
+        return getCurrentAcl(eventOnDB).size() == ONE_TAG_COUNT;
+    }
+
+    private boolean isTagOnAcl(List<String> acl, String tag) {
+        return acl.contains(tag);
+    }
+
+    private Response checkAclTags(Entity eventOnDB, List<String> acl, String tag) {
+        if (!isTagOnAcl(acl, tag)) {
+            LOG.fine("Not found - tag does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not found - tag does not exist")).build();
+        } else if (isEventOneTagOnly(eventOnDB)) {
+            LOG.fine("Forbidden - can not remove the tag since events have to be associated with at least 1 tag");
+            return Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Forbidden - can not remove the tag since events have to be associated with at least 1 tag")).build();
+        }
+        return null;
+    }
+
+    private Response removeAclTag(Transaction txn, Entity event, UpdateEventAclData data) {
+        final List<String> acl = getCurrentAcl(event);
+        final Response checkAclTags = checkAclTags(event, acl, data.tag);
+        if (checkAclTags != null) {
+            return checkAclTags;
+        }
+        Entity.Builder eb = Entity.newBuilder(event);
+        acl.remove(data.tag);
+        final String[] updatedAcl = acl.toArray(new String[acl.size()]);
+        eb.set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(DatastoreTypes.getAclFirst(updatedAcl), DatastoreTypes.getAclRest(updatedAcl)));
+        txn.update(eb.build());
+        LOG.info("ACL tag was removed - " + data.tag);
+        return Response.ok(gson.toJson("ACL tag was removed - " + data.tag)).build();
     }
 }
