@@ -125,10 +125,15 @@ public class UpdateEventAclBackOfficeResource {
     private Entity addAclTag(Entity event, UpdateEventAclData data) {
         Entity.Builder eb = Entity.newBuilder(event);
         final List<String> currAcl = getCurrentAcl(event);
-        currAcl.add(data.tag);
+        addIfAbsent(currAcl, data.tag);
         final String[] updatedAcl = currAcl.toArray(new String[currAcl.size()]);
         eb.set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(DatastoreTypes.getAclFirst(updatedAcl), DatastoreTypes.getAclRest(updatedAcl)));
         return eb.build();
+    }
+
+    private void addIfAbsent(List<String> currAcl, String tag) {
+        if (!currAcl.contains(tag))
+            currAcl.add(tag);
     }
 
     private List<String> getCurrentAcl(Entity eventOnDB) {
