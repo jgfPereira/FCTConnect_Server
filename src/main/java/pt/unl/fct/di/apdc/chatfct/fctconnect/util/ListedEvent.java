@@ -14,7 +14,7 @@ public class ListedEvent {
     private final String startDate;
     private final String endDate;
 
-    private ListedEvent(Entity event) {
+    protected ListedEvent(Entity event) {
         name = event.getString(DatastoreTypes.EVENT_NAME_ATTR);
         location = event.getString(DatastoreTypes.EVENT_LOCATION_ATTR);
         description = event.getString(DatastoreTypes.EVENT_DESCRIPTION_ATTR);
@@ -29,5 +29,16 @@ public class ListedEvent {
     private static String dateToString(Date date) {
         return date.toInstant().atZone(ZoneId.of(DEFAULT_TIME_ZONE))
                 .toLocalDateTime().format(LocalDateTimeAdapter.FORMATTER);
+    }
+
+    @Override
+    public String toString() {
+        return "ListedEvent{" +
+                "name='" + name + '\'' +
+                ", location='" + location + '\'' +
+                ", description='" + description + '\'' +
+                ", startDate='" + startDate + '\'' +
+                ", endDate='" + endDate + '\'' +
+                '}';
     }
 }
