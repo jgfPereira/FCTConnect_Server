@@ -50,6 +50,10 @@ public final class FuzzySearcher {
     private List<Document> searchIndex(String fieldName, String queryString) {
         try {
             final Term term = new Term(fieldName, queryString);
+//            final BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+//            booleanQueryBuilder.add(fuzzyQuery, BooleanClause.Occur.SHOULD);
+//            booleanQueryBuilder.add(spanNearQuery, BooleanClause.Occur.SHOULD);
+//            final BooleanQuery query = booleanQueryBuilder.build();
             final Query query = new FuzzyQuery(term);
             final IndexReader indexReader = DirectoryReader.open(memIndex);
             final IndexSearcher searcher = new IndexSearcher(indexReader);
