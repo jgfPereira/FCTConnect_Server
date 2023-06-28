@@ -5,13 +5,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queries.spans.SpanMultiTermQueryWrapper;
-import org.apache.lucene.queries.spans.SpanNearQuery;
-import org.apache.lucene.queries.spans.SpanQuery;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 
@@ -22,7 +16,6 @@ import java.util.List;
 
 public final class FuzzySearcher {
 
-    private static final String DELIMITER = " ";
     private static final int QUERY_SEARCH_LIMIT = 10;
     private final Directory memIndex = new ByteBuffersDirectory();
     private final Document document = new Document();
@@ -44,9 +37,10 @@ public final class FuzzySearcher {
     private void populateIndex(List<String> data, final String fieldName) {
         try {
             for (String fieldValue : data) {
-                document.add(new TextField(fieldName, fieldValue, Field.Store.YES));
+                Document doc = new Document();
+                doc.add(new TextField(fieldName, fieldValue, Field.Store.YES));
+                indexWriter.addDocument(doc);
             }
-            indexWriter.addDocument(document);
             indexWriter.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -55,12 +49,8 @@ public final class FuzzySearcher {
 
     private List<Document> searchIndex(String fieldName, String queryString) {
         try {
-            final String[] queryTerms = queryString.split(DELIMITER);
-            SpanQuery[] clauses = new SpanQuery[queryTerms.length];
-            for (int i = 0; i < clauses.length; i++) {
-                clauses[i] = new SpanMultiTermQueryWrapper<>(new FuzzyQuery(new Term(fieldName, queryTerms[i])));
-            }
-            final SpanNearQuery query = new SpanNearQuery(clauses, 0, true);
+            final Term term = new Term(fieldName, queryString);
+            final Query query = new FuzzyQuery(term);
             final IndexReader indexReader = DirectoryReader.open(memIndex);
             final IndexSearcher searcher = new IndexSearcher(indexReader);
             final TopDocs hitDocs = searcher.search(query, QUERY_SEARCH_LIMIT);
