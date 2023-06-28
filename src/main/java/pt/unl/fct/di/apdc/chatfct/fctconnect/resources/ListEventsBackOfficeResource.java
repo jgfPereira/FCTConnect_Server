@@ -27,7 +27,6 @@ public class ListEventsBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(ListEventsBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
-    private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
     private final Gson gson = new Gson();
 
     public ListEventsBackOfficeResource() {

@@ -4,6 +4,7 @@ import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.FuzzySearcher;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
@@ -60,10 +61,10 @@ public class SearchEventResource {
             Query<Entity> userEventsQuery = getUserEventsQuery(role);
             QueryResults<Entity> userEventsResults = txn.run(userEventsQuery);
             List<String> allEventsNames = getAllEventsNames(userEventsResults);
-            // TODO fuzzy search - with apache lucene
+            final List<String> hits = FuzzySearcher.fuzzySearch(allEventsNames, DatastoreTypes.EVENT_NAME_ATTR, eventNameFuzzy);
             txn.commit();
             LOG.info("Event was fetched by name");
-            return Response.ok(gson.toJson(allEventsNames)).build();
+            return Response.ok(gson.toJson(hits)).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
