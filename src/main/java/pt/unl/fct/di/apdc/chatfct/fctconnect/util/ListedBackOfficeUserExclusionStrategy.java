@@ -9,9 +9,7 @@ public class ListedBackOfficeUserExclusionStrategy implements ExclusionStrategy 
 
     @Override
     public boolean shouldSkipField(FieldAttributes f) {
-        return f.getDeclaringClass().equals(ListedUser.class)
-                && f.getDeclaredClass().equals(ListedBackOfficeUser.class)
-                && f.getName().equals(PHOTO_ATTR_CONFLICT);
+        return f.getDeclaringClass().equals(ListedUser.class) && f.getName().equals(PHOTO_ATTR_CONFLICT);
     }
 
     @Override

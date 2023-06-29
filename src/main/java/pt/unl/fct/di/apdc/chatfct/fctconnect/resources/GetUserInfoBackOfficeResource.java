@@ -26,12 +26,12 @@ public class GetUserInfoBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
-    private final Gson gson = initGson();
+    private final Gson gson = new Gson();
 
     public GetUserInfoBackOfficeResource() {
     }
 
-    private static Gson initGson() {
+    private static Gson getGsonWithExclusion() {
         return new GsonBuilder().addSerializationExclusionStrategy(new ListedBackOfficeUserExclusionStrategy()).create();
     }
 
@@ -162,7 +162,7 @@ public class GetUserInfoBackOfficeResource {
                 resp = Response.status(Response.Status.FORBIDDEN).entity(gson.toJson("Dont have permission to fetch this user info")).build();
             } else {
                 final ListedBackOfficeUser listedUser = ListedBackOfficeUser.createListedBackOfficeUser(otherOnDB);
-                resp = Response.ok(gson.toJson(listedUser)).build();
+                resp = Response.ok(getGsonWithExclusion().toJson(listedUser)).build();
             }
             txn.commit();
             LOG.fine("Back office user info fetched");
