@@ -6,11 +6,11 @@ import com.google.gson.FieldAttributes;
 public class ListedBackOfficeUserExclusionStrategy implements ExclusionStrategy {
 
     private static final String PHOTO_ATTR_CONFLICT = "photo";
-    
+
     @Override
     public boolean shouldSkipField(FieldAttributes f) {
         return f.getDeclaringClass().equals(ListedUser.class)
-                && f.getDeclaredClass().equals(ListedBackOfficeEvent.class)
+                && f.getDeclaredClass().equals(ListedBackOfficeUser.class)
                 && f.getName().equals(PHOTO_ATTR_CONFLICT);
     }
 
