@@ -29,7 +29,7 @@ public class ListedUser {
         email = user.getString(DatastoreTypes.EMAIL_ATTR);
         role = DatastoreTypes.formatRoleType(user.getString(DatastoreTypes.ROLE_ATTR));
         creationDate = creationDateToString(user.getTimestamp(DatastoreTypes.CREATION_DATE_ATTR).toDate());
-        photo = handleNull(user.getString(DatastoreTypes.PHOTO_ATTR));
+        photo = handleNull(null);
     }
 
     public static ListedUser createListedUser(ProjectionEntity entity) {

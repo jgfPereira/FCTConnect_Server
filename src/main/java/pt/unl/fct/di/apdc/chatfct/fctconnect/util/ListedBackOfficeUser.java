@@ -3,7 +3,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 import com.google.cloud.datastore.Entity;
 
 public class ListedBackOfficeUser extends ListedUser {
-
+    
     private final String username;
     private final String state;
 

@@ -2,6 +2,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
@@ -25,9 +26,13 @@ public class GetUserInfoBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
-    private final Gson gson = new Gson();
+    private final Gson gson = initGson();
 
     public GetUserInfoBackOfficeResource() {
+    }
+
+    private static Gson initGson() {
+        return new GsonBuilder().addSerializationExclusionStrategy(new ListedBackOfficeUserExclusionStrategy()).create();
     }
 
     @GET
