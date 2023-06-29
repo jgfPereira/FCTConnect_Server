@@ -31,7 +31,7 @@ public class GetUserInfoBackOfficeResource {
     }
 
     @GET
-    @Path("/regularuser")
+    @Path("/regularuser/{username}")
     public Response doGetRegularUserInfo(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get regular user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);
@@ -120,7 +120,7 @@ public class GetUserInfoBackOfficeResource {
     }
 
     @GET
-    @Path("/backofficeuser")
+    @Path("/backofficeuser/{username}")
     public Response doGetBackOfficeUserInfo(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to get another back office user info");
         final String token = TokenUtils.extractTokenFromHeaders(request);

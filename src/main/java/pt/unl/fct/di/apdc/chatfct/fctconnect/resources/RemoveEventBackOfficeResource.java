@@ -34,6 +34,7 @@ public class RemoveEventBackOfficeResource {
     }
 
     @DELETE
+    @Path("/{id}")
     public Response doRemoveEvent(@PathParam(ID_PATH_PARAM) String id, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Backoffice user attempt to remove event");
         final String token = TokenUtils.extractTokenFromHeaders(request);

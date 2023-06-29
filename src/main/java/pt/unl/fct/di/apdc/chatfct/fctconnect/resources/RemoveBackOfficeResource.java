@@ -36,7 +36,7 @@ public class RemoveBackOfficeResource {
     }
 
     @DELETE
-    @Path("/regularuser")
+    @Path("/regularuser/{username}")
     public Response doRemoveRegularUser(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to remove regular user");
         final String token = TokenUtils.extractTokenFromHeaders(request);
@@ -172,7 +172,7 @@ public class RemoveBackOfficeResource {
     }
 
     @DELETE
-    @Path("/backofficeuser")
+    @Path("/backofficeuser/{username}")
     public Response doRemoveBackOfficeUser(@PathParam(USERNAME_PATH_PARAM) String otherUsername, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to remove another back office user");
         final String token = TokenUtils.extractTokenFromHeaders(request);

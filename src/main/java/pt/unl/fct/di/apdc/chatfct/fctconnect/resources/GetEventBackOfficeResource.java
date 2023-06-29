@@ -34,6 +34,7 @@ public class GetEventBackOfficeResource {
     }
 
     @GET
+    @Path("/{id}")
     public Response doGetEvent(@PathParam(ID_PATH_PARAM) String id, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("Back office user attempt to list events");
         final String token = TokenUtils.extractTokenFromHeaders(request);
