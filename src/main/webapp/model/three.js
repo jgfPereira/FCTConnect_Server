@@ -74,9 +74,29 @@ function errorCallback(error) {
 navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
 */
 // Set up a timer to request position updates at a desired interval (e.g., every 5 seconds)
-setInterval(function() {
-  navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-}, 10000);
+// setInterval(function () {
+//     // navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+//     fetch('https://fctconnectdb.oa.r.appspot.com/rest/getlocation/user1', {
+//         method: 'GET'
+//     })
+//         .then(response => {
+//             if (response.ok) {
+//                 console.log(response.body); // get the value of the Content-Type header
+//                 return response.json();
+//             } else {
+//                 //alert("not able to get events");
+//
+//             }
+//         })
+//         .then(data => {
+//             latestUserPosition.set((data.coordY + 9.20575) / 0.00001148273, 0, -(data.coordX - 38.66102) / 0.00000809869)
+//             console.log(data);
+//         })
+//         .catch(error => {
+//             // handle login failure
+//             //alert(error.message);
+//         });
+// }, 10000);
 
 
 function updatePosition() {
@@ -87,8 +107,8 @@ function updatePosition() {
     });
 }
 
-//updatePosition();
-// latestUserPosition.set(5, 0, 5);
+// updatePosition();
+latestUserPosition.set(5, 0, 5);
 
 /*
 document.addEventListener('mousedown', (event) => {
@@ -269,6 +289,9 @@ function showThreePopup(popup) {
 
 }
 
+function alertTest() {
+    window.alert("Alert Test!")
+}
 
 function init() {
     const authToken = localStorage.getItem("authToken");
