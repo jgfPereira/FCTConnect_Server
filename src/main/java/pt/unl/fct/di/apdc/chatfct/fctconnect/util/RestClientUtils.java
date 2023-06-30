@@ -12,7 +12,7 @@ public final class RestClientUtils {
     private static final String GET_FRIENDS_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/getfriends";
     private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
-    private static final String GET_PLAYER_LOCATION_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
+    private static final String GET_PLAYER_LOCATION_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/getlocation";
 
     private RestClientUtils() {
     }
