@@ -16,23 +16,22 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-
-@Path("/addfriend")
+@Path("/removefriend")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class AddFriendResource {
+public class RemoveFriendResource {
 
-    private static final Logger LOG = Logger.getLogger(AddFriendResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(RemoveFriendResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
 
-    public AddFriendResource() {
+    public RemoveFriendResource() {
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public Response doAddFriend(AddFriendData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to add friend");
+    public Response doRemoveFriend(RemoveFriendData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("User attempt to remove friend");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
@@ -45,7 +44,7 @@ public class AddFriendResource {
             return checkData;
         }
         Key usernameKey = userKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.friendUsername);
+        Key otherKey = userKeyFactory.newKey(data.removeFriend);
         Transaction txn = datastore.newTransaction();
         try {
             Entity usernameOnDB = txn.get(usernameKey);
@@ -55,15 +54,15 @@ public class AddFriendResource {
                 txn.rollback();
                 return checkUsersOnDB;
             }
-            final Response postFriendDBRequest = RestClientUtils.postFriend(data);
-            if (postFriendDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
+            final Response deleteFriendDBRequest = RestClientUtils.deleteFriend(data);
+            if (deleteFriendDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
                 txn.commit();
-                LOG.fine("Friend was added to list");
+                LOG.fine("Friend was removed");
             } else {
                 txn.rollback();
                 LOG.fine("Server Error");
             }
-            return postFriendDBRequest;
+            return deleteFriendDBRequest;
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -76,7 +75,7 @@ public class AddFriendResource {
         }
     }
 
-    private Response checkData(AddFriendData data, String username) {
+    private Response checkData(RemoveFriendData data, String username) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: username is invalid");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
