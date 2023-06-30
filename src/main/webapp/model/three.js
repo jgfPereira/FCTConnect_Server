@@ -1,13 +1,13 @@
 //import * as THREE from 'https://unpkg.com/three@0.150.1/build/three.module.js';
 import * as THREE from 'three';
 //import { GLTFLoader } from "https://unpkg.com/three@0.150.1/examples/js/loaders/GLTFLoader.js";
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
+import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 //import { DRACOLoader } from "https://cdn.skypack.dev/three@0.125.0/examples/jsm/loaders/DRACOLoader";
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {CSS2DObject, CSS2DRenderer} from 'three/addons/renderers/CSS2DRenderer.js';
 
 var canvas, controls;
 var camera, scene, renderer, labelRenderer, ambientLight;
@@ -23,8 +23,8 @@ let latestUserPosition = new THREE.Vector3();
 var oldPosition = new THREE.Vector3();
 let xzPlane;
 let gui, actions, face, activeAction, previousAction;
-const api = { state: 'boxing' };
-const pInit = { state: 'monster' };
+const api = {state: 'boxing'};
+const pInit = {state: 'monster'};
 let anim;
 let gltfLoader;
 let cPointLabel;
@@ -61,28 +61,35 @@ function successCallback(position) {
     console.log('Latitude: ' + latitude + ', Longitude: ' + longitude);
     latestUserPosition.set((longitude + 9.20575) / 0.00001148273, 0, -(latitude - 38.66102) / 0.00000809869);
     // Handle the retrieved position data as needed
-  }
-  
-  // Function to handle errors in position retrieval
-  function errorCallback(error) {
+}
+
+// Function to handle errors in position retrieval
+function errorCallback(error) {
     console.log('Error retrieving position: ' + error.message);
     // Handle the error condition as needed
-  }
-  /*
-  // Request the initial position update
-  navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-  
-  // Set up a timer to request position updates at a desired interval (e.g., every 5 seconds)
-  setInterval(function() {
-    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-  }, 10000);
+}
+
+/*
+// Request the initial position update
+navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
 */
+// Set up a timer to request position updates at a desired interval (e.g., every 5 seconds)
+setInterval(function() {
+  navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+}, 10000);
+
 
 function updatePosition() {
-    navigator.geolocation.watchPosition(successCallback, errorCallback, { maximumAge: 1000, enableHighAccuracy: true, timeout: 5000 });
+    navigator.geolocation.watchPosition(successCallback, errorCallback, {
+        maximumAge: 1000,
+        enableHighAccuracy: true,
+        timeout: 5000
+    });
 }
+
 //updatePosition();
-latestUserPosition.set(5, 0, 5);
+// latestUserPosition.set(5, 0, 5);
+
 /*
 document.addEventListener('mousedown', (event) => {
   const mouse = new THREE.Vector2(
@@ -111,25 +118,26 @@ document.addEventListener('mousedown', (event) => {
   
 });
 */
-function myFunction(popup){
+function myFunction(popup) {
     popup.style.display = 'none';
     showPopup(popup);
     //console.log(eventArray[i]);
 }
-function eventHandler(building){
+
+function eventHandler(building) {
     const eventPopup = document.getElementById('event-popup');
     const h1Element = eventPopup.querySelector('#event-popup h1');
     const ulElement = eventPopup.querySelector('#event-popup ul');
     ulElement.innerHTML = '';
     h1Element.textContent = building;
-                
+
     for (let i = 0; i < eventArray.length; i++) {
-        if(eventArray[i].location==building||building=="ALL"){
+        if (eventArray[i].location == building || building == "ALL") {
             console.log("yesss");
             const option1 = document.createElement('li');
             const option1Link = document.createElement('a');
             option1Link.setAttribute('data-popup', 'event-popup');
-            option1Link.addEventListener('click', function(event) {
+            option1Link.addEventListener('click', function (event) {
                 console.log(event);
                 event.preventDefault();
                 const popupId = this.getAttribute('data-popup');
@@ -144,38 +152,39 @@ function eventHandler(building){
                 const fieldNames = ['Name', 'Location', 'Description', 'Start Date', 'End Date'];
                 // Create the <p> elements with <strong> and <span> elements inside
                 fieldNames.forEach(fieldName => {
-                const fieldParagraph = document.createElement('p');
-                const strongElement = document.createElement('strong');
-                strongElement.textContent = `${fieldName}: `;
-                const spanElement = document.createElement('span');
-                //spanElement.id = fieldName.toLowerCase().replace(' ', '-');
-                const lowerName = fieldName.toLowerCase();
-                console.log(lowerName);
-                spanElement.textContent = `${eventArray[i][lowerName]}`;
-                fieldParagraph.appendChild(strongElement);
-                fieldParagraph.appendChild(spanElement);
-                eventInfo.appendChild(fieldParagraph);
+                    const fieldParagraph = document.createElement('p');
+                    const strongElement = document.createElement('strong');
+                    strongElement.textContent = `${fieldName}: `;
+                    const spanElement = document.createElement('span');
+                    //spanElement.id = fieldName.toLowerCase().replace(' ', '-');
+                    const lowerName = fieldName.toLowerCase();
+                    console.log(lowerName);
+                    spanElement.textContent = `${eventArray[i][lowerName]}`;
+                    fieldParagraph.appendChild(strongElement);
+                    fieldParagraph.appendChild(spanElement);
+                    eventInfo.appendChild(fieldParagraph);
                 });
                 showPopup(singleEventPopup);
-              });
+            });
             option1Link.textContent = eventArray[i].name;
             option1.appendChild(option1Link);
             ulElement.appendChild(option1);
-        }  
+        }
     }
     showPopup(eventPopup);
-}  
+}
+
 document.addEventListener('mousedown', (event) => {
     const mouse = new THREE.Vector2(
-      (event.clientX / window.innerWidth) * 2 - 1,
-      -(event.clientY / window.innerHeight) * 2 + 1
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
     );
     //console.log(xzPlane.position);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
     raycaster.near = 0.1;
     raycaster.far = 1000;
-        
+
     const intersects = raycaster.intersectObject(group, true);
     console.log(intersects);
     if (intersects.length > 0) {
@@ -184,7 +193,7 @@ document.addEventListener('mousedown', (event) => {
         //const eventPopup = document.getElementById('event-popup');
         //const h1Element = eventPopup.querySelector('#event-popup h1');
         //const ulElement = eventPopup.querySelector('#event-popup ul');
-        switch(intersects[0].object.name){
+        switch (intersects[0].object.name) {
             case 'ed7':
                 eventHandler("ED7");
                 break;
@@ -197,8 +206,9 @@ document.addEventListener('mousedown', (event) => {
         }
 
     }
-    
-  });
+
+});
+
 // Function to show a pop-up
 function showPopup(popup) {
     canvas.style.display = 'block';
@@ -208,7 +218,7 @@ function showPopup(popup) {
 function showThreePopup(popup) {
     canvas.style.display = 'block';
     popup.style.display = 'block';
-    
+
     const caractherPopup = document.getElementById('caracther-popup');
     //caractherPopup.style.boxSizing = 'border-box';
     // Create a scene
@@ -223,13 +233,13 @@ function showThreePopup(popup) {
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(caractherPopup.clientWidth, caractherPopup.clientHeight);
     caractherPopup.appendChild(renderer.domElement);
-    
+
     const gltfLoader2 = new GLTFLoader();
     gltfLoader2.load('./monster.glb', function (gltf) {
         const player2 = gltf.scene;
         scene.add(player2);
     });
-    
+
     // Create ambient light
     const ambientLight = new THREE.HemisphereLight(
         'white',
@@ -248,42 +258,44 @@ function showThreePopup(popup) {
 
     // Animation loop
     function animate() {
-    requestAnimationFrame(animate);
-    //cube.rotation.x += 0.01;
-    //cube.rotation.y += 0.01;
-    renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+        //cube.rotation.x += 0.01;
+        //cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
     }
+
     animate();
-    
-    
+
+
 }
 
 
 function init() {
+    const authToken = localStorage.getItem("authToken");
     fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
-            method: 'GET',
-            headers: {
-              'x-auth-token': 'Bearer ***REMOVED***'
-            }
-          })
-          .then(response => {
+        method: 'GET',
+        headers: {
+            'x-auth-token': 'Bearer ' + authToken
+        }
+    })
+        .then(response => {
             if (response.ok) {
-              console.log(response.body); // get the value of the Content-Type header
-              return response.json();
+                console.log(response.body); // get the value of the Content-Type header
+                return response.json();
             } else {
-              //alert("not able to get events");
+                //alert("not able to get events");
 
             }
-          })
-          .then(data => {
-            eventArray=data;
+        })
+        .then(data => {
+            eventArray = data;
             console.log("arayy de evnetosssss");
             console.log(eventArray);
-          })
-          .catch(error => {
+        })
+        .catch(error => {
             // handle login failure
             //alert(error.message);
-          });
+        });
     //const loadingVideo = document.getElementById('loading-video');
     canvas = document.getElementById('info');
     //const popups = document.querySelectorAll('.popup');
@@ -305,39 +317,39 @@ function init() {
     const submitButton = document.getElementById('submit-button');
     // Add event listener to close all pop-ups
     //closePopups.forEach(closePopup => closePopup.addEventListener('click', hidePopups()));
-    
+
     closePopups.forEach(closePopup => {
-        closePopup.addEventListener('click', function(event) {
-          event.preventDefault();
-          const popupId = this.getAttribute('data-popup');
-          console.log(popupId);
-          const popup = document.getElementById(popupId);
-          console.log(popup);
-          // Now you have access to the popup ID and the corresponding popup element
-          // You can perform additional actions based on the specific popup being closed
-          canvas.style.display = 'none';
-          popup.style.display = 'none'; // Hide the popup
+        closePopup.addEventListener('click', function (event) {
+            event.preventDefault();
+            const popupId = this.getAttribute('data-popup');
+            console.log(popupId);
+            const popup = document.getElementById(popupId);
+            console.log(popup);
+            // Now you have access to the popup ID and the corresponding popup element
+            // You can perform additional actions based on the specific popup being closed
+            canvas.style.display = 'none';
+            popup.style.display = 'none'; // Hide the popup
         });
-      });
-    submitButton.addEventListener('click', function(event) {
+    });
+    submitButton.addEventListener('click', function (event) {
         event.preventDefault(); // Prevent form submission
-      
+
         const input1Value = parseFloat(document.getElementById('input1').value);
         const input2Value = parseFloat(document.getElementById('input2').value);
-        const x=(input2Value + 9.20575) / 0.00001148273;
-        const z=-(input1Value - 38.66102) / 0.00000809869;
+        const x = (input2Value + 9.20575) / 0.00001148273;
+        const z = -(input1Value - 38.66102) / 0.00000809869;
         latestUserPosition = new THREE.Vector3(x, 0, z);
     });
     // Note: You can also add this event listener to close the pop-ups when clicking outside the pop-up area
     //canvas.addEventListener('click', hidePopups);
-    
+
     document.body.appendChild(canvas);
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     controls = new OrbitControls(camera, renderer.domElement);
@@ -345,7 +357,7 @@ function init() {
     controls.minPolarAngle = 0;            // The minimum angle (in radians)
     controls.maxPolarAngle = Math.PI / 2;  // The maximum angle (in radians)
     controls.enablePan = false;
-	controls.enableDamping = true;
+    controls.enableDamping = true;
 
     // Disable rotation and enable vertical panning
     //controls.enableRotate = false;
@@ -370,12 +382,12 @@ function init() {
         });
 
     const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     const cube = new THREE.Mesh(geometry, material);
     gltfLoader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-    dracoLoader.setDecoderConfig({ type: 'js' });
+    dracoLoader.setDecoderConfig({type: 'js'});
     gltfLoader.setDRACOLoader(dracoLoader);
     gltfLoader.load(
         // resource URL
@@ -383,7 +395,7 @@ function init() {
         // called when the resource is loaded
         function (draco) {
             model = draco.scene;
-            model.position.y=-0.2;
+            model.position.y = -0.2;
             /*
             draco.scene.traverse(function (object) {
 
@@ -442,14 +454,14 @@ function init() {
         player = gltf.scene;
         // Clone or create new instances of the objects in the GLTF scene
         //clonedPlayer = gltf.scene.clone(); // Clone the entire scene
-        const skeleton = new THREE.SkeletonHelper( gltf.scene );
+        const skeleton = new THREE.SkeletonHelper(gltf.scene);
         const bones = skeleton.bones;
         //console.log(gltf.scene);
 
         //loop through all the bones and log their names
-        bones.forEach( ( bone ) => {
-        console.log( bone.name );
-        } );
+        bones.forEach((bone) => {
+            console.log(bone.name);
+        });
         //mixer = new THREE.AnimationMixer( monster );
         //mixer.clipAction( anim ).play();
         createUltimate(anim);
@@ -507,17 +519,17 @@ function init() {
     scene.add(cube3);
     cube3.position.set(0, 10, 0);
     */
-    labelRenderer=new CSS2DRenderer();
+    labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    labelRenderer.domElement.style.position='absolute';
+    labelRenderer.domElement.style.position = 'absolute';
     //labelRenderer.domElement.style.zIndex='1100';
-    labelRenderer.domElement.style.top='0px';
-    labelRenderer.domElement.style.pointerEvents='none';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(labelRenderer.domElement);
 
-    group= new THREE.Group();
-    const signGroup= new THREE.Group();
-    
+    group = new THREE.Group();
+    const signGroup = new THREE.Group();
+
     function createInstance(sign, name, x, y, z, r) {
         const modelPlaca = sign.clone();
         modelPlaca.position.set(x, y, z);
@@ -526,23 +538,23 @@ function init() {
         modelPlaca.rotateOnAxis(rotationAxis, rotationAngle);
         signGroup.add(modelPlaca);
 
-        const geo= new THREE.SphereGeometry(2.2);
+        const geo = new THREE.SphereGeometry(2.2);
         //const mat= new THREE.MeshBasicMaterial({color: 0xFF0000});
-        const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
-        const mesh= new THREE.Mesh(geo,mat);
-        mesh.position.set(x, y+2, z);
-        mesh.name= name;
+        const mat = new THREE.MeshBasicMaterial({transparent: true, opacity: 0});
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y + 2, z);
+        mesh.name = name;
         group.add(mesh);
     }
 
     gltfLoader.load('./sign.glb', function (gltf) {
-        const sign=gltf.scene;
+        const sign = gltf.scene;
         createInstance(sign, "ed7", -4, 0, 29, 1);
         createInstance(sign, "ed2", 174, 0, 16, 1.33);
     });
     scene.add(signGroup);
     scene.add(group);
-    
+
     /*
     function createCpointMesh(name, x, y, z){
         const geo= new THREE.SphereBufferGeometry(0.4);
@@ -577,13 +589,13 @@ function init() {
     p.textContent='Kroben';
     */
 
-    
-    const p =document.createElement('p');
-    p.textContent='Kroben';
-    cPointLabel=new CSS2DObject(p);
+
+    const p = document.createElement('p');
+    p.textContent = 'Kroben';
+    cPointLabel = new CSS2DObject(p);
     scene.add(cPointLabel);
     console.log(cPointLabel);
-    
+
 
     /*
     // Create a circle geometry
@@ -607,8 +619,8 @@ function init() {
     // Add the particle system to the scene
     scene.add(particleSystem);
     */
-   
-   
+
+
     // Calculate the width and height of the map in latitude and longitude units
     var mapLatRange = 38.66380 - 38.65839;
     var mapLngRange = -9.20225 - (-9.20925);
@@ -643,9 +655,11 @@ function init() {
     function onKeyDown(event) {
         keyboard[event.code] = true;
     }
+
     function onKeyUp(event) {
         keyboard[event.code] = false;
     }
+
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     /*
@@ -676,7 +690,7 @@ function animate() {
         controls.target.copy(player.position);
         console.log(player.position);
         cPointLabel.position.copy(player.position);
-        cPointLabel.position.y=3;
+        cPointLabel.position.y = 3;
     }
     if (keyboard['KeyS']) {
         player.position.z += 0.3;
@@ -684,7 +698,7 @@ function animate() {
         controls.target.copy(player.position);
         console.log(player.position);
         cPointLabel.position.copy(player.position);
-        cPointLabel.position.y=3;
+        cPointLabel.position.y = 3;
     }
     if (keyboard['KeyA']) {
         player.position.x -= 0.3;
@@ -692,7 +706,7 @@ function animate() {
         controls.target.copy(player.position);
         console.log(player.position);
         cPointLabel.position.copy(player.position);
-        cPointLabel.position.y=3;
+        cPointLabel.position.y = 3;
     }
     if (keyboard['KeyD']) {
         player.position.x += 0.3;
@@ -700,7 +714,7 @@ function animate() {
         controls.target.copy(player.position);
         console.log(player.position);
         cPointLabel.position.copy(player.position);
-        cPointLabel.position.y=3;
+        cPointLabel.position.y = 3;
     }
 
     if (keyboard['KeyT']) {
@@ -712,7 +726,7 @@ function animate() {
     }
 
     if (player) { // Make sure characterMesh is defined
-        if(!latestUserPosition.equals(player.position)){
+        if (!latestUserPosition.equals(player.position)) {
             const direction = new THREE.Vector3().subVectors(latestUserPosition, player.position);
             const speedFactor = 200; // Adjust this value to control the speed of movement
             const distance = direction.length() / speedFactor;
@@ -722,7 +736,7 @@ function animate() {
                 player.lookAt(player.position.clone().add(direction));
                 controls.target.copy(player.position);
                 cPointLabel.position.copy(player.position);
-                cPointLabel.position.y=3;
+                cPointLabel.position.y = 3;
             }
         }
     }
@@ -742,6 +756,7 @@ function animate() {
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
 }
+
 function createUltimate(animations) {
     //player.position.x = (-9.20348 + 9.20575) / 0.0000117094;
     //player.position.y = 0;
@@ -777,17 +792,17 @@ function createUltimate(animations) {
     clipCtrl.onChange(function () {
         fadeToAction(api.state, 0.5);
     });
-    
+
     playersF.onChange(function () {
         scene.remove(player);
         gltfLoader.load(pInit.state, function (gltf) {
             player = gltf.scene;
             createUltimate(animations);
             scene.add(player);
-           
+
         });
     });
-    
+
     activeAction = actions['boxing'];
     activeAction.play();
     statesFolder.open();
@@ -912,14 +927,16 @@ function fadeToAction(name, duration) {
         .play();
 
 }
+
 window.onresize = function () {
 
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
 };
+
 function tick() {
     // only call the getDelta function once per frame!
     const delta = clock.getDelta();
