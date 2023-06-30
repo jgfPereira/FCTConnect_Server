@@ -10,6 +10,7 @@ public final class RestClientUtils {
     private static final String ADD_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addfriend";
     private static final String REMOVE_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removefriend";
     private static final String GET_FRIENDS_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/getfriends";
+    private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
 
     private RestClientUtils() {
     }
@@ -34,5 +35,12 @@ public final class RestClientUtils {
                 .path(username)
                 .request(MediaType.APPLICATION_JSON)
                 .get();
+    }
+
+    public static Response postOnlinePlayer(AddOnlinePlayerData data) {
+        return ClientBuilder.newClient()
+                .target(ADD_ONLINE_PLAYER_URI_DB)
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
 }
