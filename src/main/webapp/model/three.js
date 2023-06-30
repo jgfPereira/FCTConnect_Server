@@ -30,18 +30,59 @@ let gltfLoader;
 let cPointLabel;
 let group;
 let eventArray = [];
+var objectNameMap = {};
 init();
 /*
 if ('geolocation' in navigator) {
   navigator.geolocation.watchPosition(function(position) {
-    var latitude = position.coords.latitude;
-    var longitude = position.coords.longitude;
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
     console.log('Latitude: ' + latitude + ', Longitude: ' + longitude);
+    //player.position.set();
+    //player.position.x = (longitude + 9.20575) / 0.0000117094;
+    //player.position.y = 0;
+    //player.position.z = -(latitude - 38.66102) / 0.00000333333;
+    //console.log(player.position);
+    //player.position.x = (-9.20322 + 9.20575) / 0.0000117094;
+    //player.position.y = 0;
+    //player.position.z = -(38.66101 - 38.66102) / 0.00000333333;
+    latestUserPosition.set((longitude + 9.20575) / 0.0000117094, 0, -(latitude - 38.66102) / 0.00000333333);
+    //latestUserPosition.set(player.position);
   });
 } else {
   console.log('Geolocation is not available.');
 }
 */
+
+// Function to handle successful position retrieval
+function successCallback(position) {
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+    console.log('Latitude: ' + latitude + ', Longitude: ' + longitude);
+    latestUserPosition.set((longitude + 9.20575) / 0.00001148273, 0, -(latitude - 38.66102) / 0.00000809869);
+    // Handle the retrieved position data as needed
+  }
+  
+  // Function to handle errors in position retrieval
+  function errorCallback(error) {
+    console.log('Error retrieving position: ' + error.message);
+    // Handle the error condition as needed
+  }
+  /*
+  // Request the initial position update
+  navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+  
+  // Set up a timer to request position updates at a desired interval (e.g., every 5 seconds)
+  setInterval(function() {
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+  }, 10000);
+*/
+
+function updatePosition() {
+    navigator.geolocation.watchPosition(successCallback, errorCallback, { maximumAge: 1000, enableHighAccuracy: true, timeout: 5000 });
+}
+//updatePosition();
+latestUserPosition.set(5, 0, 5);
 /*
 document.addEventListener('mousedown', (event) => {
   const mouse = new THREE.Vector2(
@@ -70,8 +111,10 @@ document.addEventListener('mousedown', (event) => {
   
 });
 */
-function myFunction(i){
-    console.log(eventArray[i]);
+function myFunction(popup){
+    popup.style.display = 'none';
+    showPopup(popup);
+    //console.log(eventArray[i]);
 }
 function eventHandler(building){
     const eventPopup = document.getElementById('event-popup');
@@ -85,10 +128,36 @@ function eventHandler(building){
             console.log("yesss");
             const option1 = document.createElement('li');
             const option1Link = document.createElement('a');
-            option1Link.href = '#';
-            option1Link.addEventListener('click', function() {
-                myFunction(i);
+            option1Link.setAttribute('data-popup', 'event-popup');
+            option1Link.addEventListener('click', function(event) {
+                console.log(event);
+                event.preventDefault();
+                const popupId = this.getAttribute('data-popup');
+                console.log(popupId);
+                const popup = document.getElementById(popupId);
+                console.log(popup);
+                //canvas.style.display = 'none';
+                popup.style.display = 'none'; // Hide the popup
+                const singleEventPopup = document.getElementById('single-event-popup');
+                const eventInfo = singleEventPopup.querySelector('#single-event-popup div');
+                eventInfo.innerHTML = '';
+                const fieldNames = ['Name', 'Location', 'Description', 'Start Date', 'End Date'];
+                // Create the <p> elements with <strong> and <span> elements inside
+                fieldNames.forEach(fieldName => {
+                const fieldParagraph = document.createElement('p');
+                const strongElement = document.createElement('strong');
+                strongElement.textContent = `${fieldName}: `;
+                const spanElement = document.createElement('span');
+                //spanElement.id = fieldName.toLowerCase().replace(' ', '-');
+                const lowerName = fieldName.toLowerCase();
+                console.log(lowerName);
+                spanElement.textContent = `${eventArray[i][lowerName]}`;
+                fieldParagraph.appendChild(strongElement);
+                fieldParagraph.appendChild(spanElement);
+                eventInfo.appendChild(fieldParagraph);
                 });
+                showPopup(singleEventPopup);
+              });
             option1Link.textContent = eventArray[i].name;
             option1.appendChild(option1Link);
             ulElement.appendChild(option1);
@@ -191,19 +260,19 @@ function showThreePopup(popup) {
 
 
 function init() {
-    const authToken = localStorage.getItem("authToken");
-    alert("LocalStorage: " + authToken);
     fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
             method: 'GET',
             headers: {
-              'x-auth-token': 'Bearer ' + authToken}
+              'x-auth-token': 'Bearer ***REMOVED***'
+            }
           })
           .then(response => {
             if (response.ok) {
               console.log(response.body); // get the value of the Content-Type header
               return response.json();
             } else {
-              alert("not able to get events");
+              //alert("not able to get events");
+
             }
           })
           .then(data => {
@@ -213,7 +282,7 @@ function init() {
           })
           .catch(error => {
             // handle login failure
-            alert(error.message);
+            //alert(error.message);
           });
     //const loadingVideo = document.getElementById('loading-video');
     canvas = document.getElementById('info');
@@ -255,8 +324,8 @@ function init() {
       
         const input1Value = parseFloat(document.getElementById('input1').value);
         const input2Value = parseFloat(document.getElementById('input2').value);
-        const x=(input2Value + 9.20575) / 0.0000117094;
-        const z=-(input1Value - 38.66102) / 0.00000333333;
+        const x=(input2Value + 9.20575) / 0.00001148273;
+        const z=-(input1Value - 38.66102) / 0.00000809869;
         latestUserPosition = new THREE.Vector3(x, 0, z);
     });
     // Note: You can also add this event listener to close the pop-ups when clicking outside the pop-up area
@@ -291,7 +360,7 @@ function init() {
     );
 
     new RGBELoader()
-        .load('./puresky.hdr', function (texture) {
+        .load('./cloudysky.hdr', function (texture) {
 
             texture.mapping = THREE.EquirectangularReflectionMapping;
 
@@ -314,6 +383,7 @@ function init() {
         // called when the resource is loaded
         function (draco) {
             model = draco.scene;
+            model.position.y=-0.2;
             /*
             draco.scene.traverse(function (object) {
 
@@ -343,7 +413,7 @@ function init() {
         function (draco) {
             const di = draco.scene;
             di.scale.set(0.7, 0.7, 0.7);
-            di.position.set(225, 20, -15);
+            di.position.set(225, 0, -15);
             // Rotate the model
             const rotationAxis = new THREE.Vector3(0, 1, 0); // Adjust the axis as needed
             const rotationAngle = Math.PI / 1.35; // Adjust the angle as needed
@@ -368,7 +438,7 @@ function init() {
         anim = gltf.animations;
     });
 
-    gltfLoader.load('./michelle.glb', function (gltf) {
+    gltfLoader.load('./michelleComp.glb', function (gltf) {
         player = gltf.scene;
         // Clone or create new instances of the objects in the GLTF scene
         //clonedPlayer = gltf.scene.clone(); // Clone the entire scene
@@ -384,6 +454,7 @@ function init() {
         //mixer.clipAction( anim ).play();
         createUltimate(anim);
         scene.add(player);
+        //controls.target.copy(player.position);
         /*
         // create a bone for your cosmetic
         const cosmeticBone = new THREE.Bone();
@@ -447,9 +518,12 @@ function init() {
     group= new THREE.Group();
     const signGroup= new THREE.Group();
     
-    function createInstance(sign, name, x, y, z) {
+    function createInstance(sign, name, x, y, z, r) {
         const modelPlaca = sign.clone();
         modelPlaca.position.set(x, y, z);
+        const rotationAxis = new THREE.Vector3(0, 1, 0); // Adjust the axis as needed
+        const rotationAngle = Math.PI / r; // Adjust the angle as needed
+        modelPlaca.rotateOnAxis(rotationAxis, rotationAngle);
         signGroup.add(modelPlaca);
 
         const geo= new THREE.SphereGeometry(2.2);
@@ -463,8 +537,8 @@ function init() {
 
     gltfLoader.load('./sign.glb', function (gltf) {
         const sign=gltf.scene;
-        createInstance(sign, "ed7", 0, 0, 0);
-        createInstance(sign, "ed2", 0, 10, 0);
+        createInstance(sign, "ed7", -4, 0, 29, 1);
+        createInstance(sign, "ed2", 174, 0, 16, 1.33);
     });
     scene.add(signGroup);
     scene.add(group);
@@ -598,34 +672,59 @@ function animate() {
     // If there is no collision, update the player's position based on keyboard input
     if (keyboard['KeyW']) {
         player.position.z -= 0.3;
+        latestUserPosition.copy(player.position);
+        controls.target.copy(player.position);
+        console.log(player.position);
+        cPointLabel.position.copy(player.position);
+        cPointLabel.position.y=3;
     }
     if (keyboard['KeyS']) {
         player.position.z += 0.3;
+        latestUserPosition.copy(player.position);
+        controls.target.copy(player.position);
+        console.log(player.position);
+        cPointLabel.position.copy(player.position);
+        cPointLabel.position.y=3;
     }
     if (keyboard['KeyA']) {
         player.position.x -= 0.3;
+        latestUserPosition.copy(player.position);
+        controls.target.copy(player.position);
+        console.log(player.position);
+        cPointLabel.position.copy(player.position);
+        cPointLabel.position.y=3;
     }
     if (keyboard['KeyD']) {
         player.position.x += 0.3;
+        latestUserPosition.copy(player.position);
+        controls.target.copy(player.position);
+        console.log(player.position);
+        cPointLabel.position.copy(player.position);
+        cPointLabel.position.y=3;
     }
 
     if (keyboard['KeyT']) {
-        //player.position.set(0, 0, 0);
-        latestUserPosition.set(0, 0, 0);
+        latestUserPosition.set(0, 0, 15);
 
     }
     if (keyboard['KeyU']) {
-
+        latestUserPosition.set(156, 0, 27);
     }
 
     if (player) { // Make sure characterMesh is defined
-        const direction = new THREE.Vector3().subVectors(latestUserPosition, player.position);
-        player.position.add(direction.normalize().multiplyScalar(0.1));
-        //console.log(player.position);
-        player.lookAt(player.position.clone().add(direction));
-        controls.target.copy(player.position);
-        cPointLabel.position.copy(player.position);
-        cPointLabel.position.y=3;
+        if(!latestUserPosition.equals(player.position)){
+            const direction = new THREE.Vector3().subVectors(latestUserPosition, player.position);
+            const speedFactor = 200; // Adjust this value to control the speed of movement
+            const distance = direction.length() / speedFactor;
+            if (distance < direction.length()) {
+                player.position.add(direction.normalize().multiplyScalar(distance));
+                //console.log(player.position);
+                player.lookAt(player.position.clone().add(direction));
+                controls.target.copy(player.position);
+                cPointLabel.position.copy(player.position);
+                cPointLabel.position.y=3;
+            }
+        }
     }
     var time = Date.now() * 0.001;
     // Rotate the particle system
@@ -644,14 +743,16 @@ function animate() {
     labelRenderer.render(scene, camera);
 }
 function createUltimate(animations) {
-    player.position.x = (-9.20348 + 9.20575) / 0.0000117094;
-    player.position.y = 0;
-    player.position.z = -(38.66113 - 38.66102) / 0.00000333333;
-    latestUserPosition.copy(player.position);
-    controls.target.copy(player.position);
+    //player.position.x = (-9.20348 + 9.20575) / 0.0000117094;
+    //player.position.y = 0;
+    //player.position.z = -(38.66113 - 38.66102) / 0.00000333333;
+    //player.position.set(0, 0, 0);
+    console.log(player.position);
+    //latestUserPosition.copy(player.position);
+    //controls.target.copy(player.position);
 
     const states = ['boxing', 'capoeira'];
-    const players = ['monster.glb', 'michelle.glb'];
+    const players = ['monster.glb', 'michelleComp.glb'];
 
     gui = new GUI();
 
