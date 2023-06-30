@@ -14,14 +14,17 @@ public class CreateEventData {
     public String startDate;
     public String endDate;
     public String[] acl;
+    public String color;
+    public String recurrenceRule;
 
     public CreateEventData() {
     }
 
     public boolean validateData() {
         return !(id == null || name == null || location == null || description == null
-                || startDate == null || endDate == null || acl == null || acl.length == 0
-                || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate));
+                || startDate == null || endDate == null || acl == null
+                || !DateUtils.isTimestampValid(startDate)
+                || !DateUtils.isTimestampValid(endDate));
     }
 
     public boolean validateAclTags() {
