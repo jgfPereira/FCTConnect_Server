@@ -73,7 +73,7 @@ public class CreateEventBackOfficeResource {
             txn.put(eventCreated);
             txn.commit();
             LOG.info("Event was created - " + data.id);
-            return Response.ok(gson.toJson("Event was created - " + data.id)).build();
+            return Response.ok(gson.toJson(data.id)).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
