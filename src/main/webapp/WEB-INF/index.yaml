@@ -18,3 +18,8 @@ indexes:
     properties:
       - name: role
       - name: name
+
+  - kind: PersonalEvent
+    ancestor: yes
+    properties:
+      - name: endDate
