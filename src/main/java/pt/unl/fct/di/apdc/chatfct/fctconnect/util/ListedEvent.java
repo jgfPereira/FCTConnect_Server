@@ -8,6 +8,7 @@ import java.util.Date;
 public class ListedEvent {
 
     private static final String DEFAULT_TIME_ZONE = "UTC";
+    private final String id;
     private final String name;
     private final String location;
     private final String description;
@@ -17,6 +18,7 @@ public class ListedEvent {
     private final String recurrenceRule;
 
     protected ListedEvent(Entity event) {
+        id = event.getKey().getName();
         name = event.getString(DatastoreTypes.EVENT_NAME_ATTR);
         location = event.getString(DatastoreTypes.EVENT_LOCATION_ATTR);
         description = event.getString(DatastoreTypes.EVENT_DESCRIPTION_ATTR);
@@ -38,7 +40,8 @@ public class ListedEvent {
     @Override
     public String toString() {
         return "ListedEvent{" +
-                "name='" + name + '\'' +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
                 ", location='" + location + '\'' +
                 ", description='" + description + '\'' +
                 ", startDate='" + startDate + '\'' +
