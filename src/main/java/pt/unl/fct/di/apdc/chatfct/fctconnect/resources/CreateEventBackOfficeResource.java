@@ -147,7 +147,9 @@ public class CreateEventBackOfficeResource {
                 .set(DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description)
                 .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getAclFirst(), data.getAclRest()))
                 .set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(data.startDate))
-                .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate));
+                .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate))
+                .set(DatastoreTypes.EVENT_COLOR_ATTR, data.color)
+                .set(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR, data.recurrenceRule);
         return eb.build();
     }
 

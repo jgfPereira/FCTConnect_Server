@@ -217,6 +217,8 @@ public class UpdateEventBackOfficeResource {
             case DatastoreTypes.EVENT_END_DATE_ATTR:
             case DatastoreTypes.EVENT_NAME_ATTR:
             case DatastoreTypes.EVENT_DESCRIPTION_ATTR:
+            case DatastoreTypes.EVENT_COLOR_ATTR:
+            case DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR:
                 return true;
             case DatastoreTypes.EVENT_LOCATION_ATTR:
                 return isLocationValid(newValue);

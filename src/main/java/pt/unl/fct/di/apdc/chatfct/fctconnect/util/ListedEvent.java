@@ -13,6 +13,8 @@ public class ListedEvent {
     private final String description;
     private final String startDate;
     private final String endDate;
+    private final String color;
+    private final String recurrenceRule;
 
     protected ListedEvent(Entity event) {
         name = event.getString(DatastoreTypes.EVENT_NAME_ATTR);
@@ -20,6 +22,8 @@ public class ListedEvent {
         description = event.getString(DatastoreTypes.EVENT_DESCRIPTION_ATTR);
         startDate = dateToString(event.getTimestamp(DatastoreTypes.EVENT_START_DATE_ATTR).toDate());
         endDate = dateToString(event.getTimestamp(DatastoreTypes.EVENT_END_DATE_ATTR).toDate());
+        color = event.getString(DatastoreTypes.EVENT_COLOR_ATTR);
+        recurrenceRule = event.getString(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR);
     }
 
     public static ListedEvent createListedEvent(Entity event) {
@@ -39,6 +43,8 @@ public class ListedEvent {
                 ", description='" + description + '\'' +
                 ", startDate='" + startDate + '\'' +
                 ", endDate='" + endDate + '\'' +
+                ", color='" + color + '\'' +
+                ", recurrenceRule='" + recurrenceRule + '\'' +
                 '}';
     }
 }

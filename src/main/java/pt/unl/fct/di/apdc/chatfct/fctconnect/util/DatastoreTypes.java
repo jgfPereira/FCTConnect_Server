@@ -73,6 +73,8 @@ public final class DatastoreTypes {
     public static final String LOCATIONS_TYPE = "Locations";
     public static final String LOCATIONS_TYPE_KEY = "uniPlaces";
     public static final String LOCATIONS_PLACES_ATTR = "places";
+    public static final String EVENT_COLOR_ATTR = "color";
+    public static final String EVENT_RECURRENCE_RULE_ATTR = "recurrenceRule";
     private static final int ACL_REST_START_INDEX = 1;
 
     private DatastoreTypes() {
