@@ -3,12 +3,15 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.ListedEvent;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -16,22 +19,23 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/addonlineplayer")
+@Path("/getpersonalevent")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class AddOnlinePlayerResource {
+public class GetPersonalEventResource {
 
-    private static final Logger LOG = Logger.getLogger(AddOnlinePlayerResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(GetPersonalEventResource.class.getName());
+    private static final String ID_PATH_PARAM = "id";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final Gson gson = new Gson();
 
-    public AddOnlinePlayerResource() {
+    public GetPersonalEventResource() {
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public Response doAddOnlinePlayer(AddOnlinePlayerData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to add online player");
+    @GET
+    @Path("/{id}")
+    public Response doGetPersonalEvent(@PathParam(ID_PATH_PARAM) String id, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("User attempt to fetch personal event");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
@@ -39,28 +43,29 @@ public class AddOnlinePlayerResource {
         }
         LOG.fine("Valid token. Proceeding...");
         final String username = tokenInfo.getUsername();
-        final Response checkData = checkData(data, username);
-        if (checkData != null) {
-            return checkData;
+        final Response checkId = checkData(id);
+        if (checkId != null) {
+            return checkId;
         }
-        Key usernameKey = userKeyFactory.newKey(username);
+        Key userKey = userKeyFactory.newKey(username);
+        Key personalEventKey = createPersonalEventKey(username, id);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(usernameKey);
+            final Entity userOnDB = txn.get(userKey);
             final Response checkUserOnDB = checkUserOnDB(userOnDB);
             if (checkUserOnDB != null) {
                 txn.rollback();
                 return checkUserOnDB;
             }
-            final Response postOnlinePlayerDBRequest = RestClientUtils.postOnlinePlayer(data);
-            if (postOnlinePlayerDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
-                txn.commit();
-                LOG.fine("Online player was added");
-            } else {
+            final Entity personalEventOnDB = txn.get(personalEventKey);
+            final Response checkPersonalEventOnDB = checkPersonalEventOnDB(personalEventOnDB);
+            if (checkPersonalEventOnDB != null) {
                 txn.rollback();
-                LOG.fine("Server Error");
+                return checkPersonalEventOnDB;
             }
-            return postOnlinePlayerDBRequest;
+            txn.commit();
+            LOG.info("Event was fetched - " + id);
+            return Response.ok(gson.toJson(ListedEvent.createListedEvent(personalEventOnDB))).build();
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -73,24 +78,32 @@ public class AddOnlinePlayerResource {
         }
     }
 
-    private Response checkData(AddOnlinePlayerData data, String username) {
-        if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: username is invalid");
+    private Response checkData(String id) {
+        if (id == null || id.isBlank()) {
+            LOG.fine("Invalid data: id is invalid");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
-        } else if (!data.isTokenSameUser(username)) {
-            LOG.fine("Invalid data: usernames dont match");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - usernames dont match")).build();
-        } else if (!data.validateCoords()) {
-            LOG.fine("Invalid data: coordinates format is invalid");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - coordinates format is invalid")).build();
         }
         return null;
+    }
+
+    private Key createPersonalEventKey(String username, String id) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.PERSONAL_EVENT_TYPE)
+                .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username))
+                .newKey(id);
     }
 
     private Response checkUserOnDB(Entity userOnDB) {
         if (userOnDB == null) {
             LOG.fine("User does not exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - User does not exist")).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - user does not exist")).build();
+        }
+        return null;
+    }
+
+    private Response checkPersonalEventOnDB(Entity personalEventOnDB) {
+        if (personalEventOnDB == null) {
+            LOG.fine("Personal event does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - Personal event does not exist")).build();
         }
         return null;
     }
