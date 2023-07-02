@@ -79,10 +79,8 @@ public class LoginResource {
             final Entity userCached = getUserCached(data.username);
             final boolean isUserCached = isCached(userCached);
             if (isUserCached) {
-                LOG.fine("CACHE HIT - user entity");
                 userOnDB = userCached;
             } else {
-                LOG.fine("CACHE FAIL - user entity");
                 userOnDB = txn.get(userKey);
                 Response checkUserOnDB = checkUserOnDB(userOnDB);
                 if (checkUserOnDB != null) {
@@ -95,10 +93,8 @@ public class LoginResource {
             final Entity loginRegCached = getLoginRegCached(data.username);
             final boolean isLoginRegCached = isCached(loginRegCached);
             if (isLoginRegCached) {
-                LOG.fine("CACHE HIT - login reg entity");
                 loginRegistry = loginRegCached;
             } else {
-                LOG.fine("CACHE FAIL - login reg entity");
                 loginRegistry = txn.get(loginRegistryKey);
                 final boolean checkLoginRegistry = checkLoginRegistryOnDB(loginRegistry);
                 loginRegistry = createLoginRegistryIfMissing(loginRegistry, loginRegistryKey);
@@ -245,14 +241,23 @@ public class LoginResource {
             return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         }
         LOG.fine("Valid token. Proceeding...");
-        Key userKey = userKeyFactory.newKey(tokenInfo.getUsername());
+        final String username = tokenInfo.getUsername();
+        Key userKey = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(userKey);
-            Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(userKey);
+                Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             Query<Entity> loginLogsQuery = getLoginLogsQuery(userKey);
             QueryResults<Entity> loginLogs = txn.run(loginLogsQuery);
