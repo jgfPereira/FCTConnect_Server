@@ -37,6 +37,8 @@ public class LoginResource {
     private static final int QUERY_LIMIT = 5;
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemCacheUtils memcacheUsers = MemCacheUtils.getMemCache(MemCacheUtils.USER_NAMESPACE);
+    private final MemCacheUtils memcacheLoginRegs = MemCacheUtils.getMemCache(MemCacheUtils.LOGIN_REGISTRY_NAMESPACE);
     private final Gson gson = initGson();
 
     public LoginResource() {
@@ -44,6 +46,20 @@ public class LoginResource {
 
     private static Gson initGson() {
         return new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter()).create();
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemCacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getLoginRegCached(String username) {
+        final String key = String.format(MemCacheUtils.USER_LOGIN_REG_KEY, username);
+        return memcacheLoginRegs.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -59,17 +75,37 @@ public class LoginResource {
         Key loginLogKey = createLoginLogKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(userKey);
-            Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(data.username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                LOG.fine("CACHE HIT - user entity");
+                userOnDB = userCached;
+            } else {
+                LOG.fine("CACHE FAIL - user entity");
+                userOnDB = txn.get(userKey);
+                Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemCacheUtils.USER_ENTITY_KEY, data.username), userOnDB);
             }
-            Entity loginRegistry = txn.get(loginRegistryKey);
-            final boolean checkLoginRegistry = checkLoginRegistryOnDB(loginRegistry);
-            loginRegistry = createLoginRegistryIfMissing(loginRegistry, loginRegistryKey);
-            if (!checkLoginRegistry) {
-                txn.put(loginRegistry);
+            Entity loginRegistry;
+            final Entity loginRegCached = getLoginRegCached(data.username);
+            final boolean isLoginRegCached = isCached(loginRegCached);
+            if (isLoginRegCached) {
+                LOG.fine("CACHE HIT - login reg entity");
+                loginRegistry = loginRegCached;
+            } else {
+                LOG.fine("CACHE FAIL - login reg entity");
+                loginRegistry = txn.get(loginRegistryKey);
+                final boolean checkLoginRegistry = checkLoginRegistryOnDB(loginRegistry);
+                loginRegistry = createLoginRegistryIfMissing(loginRegistry, loginRegistryKey);
+                if (!checkLoginRegistry) {
+                    txn.put(loginRegistry);
+                }
+                memcacheLoginRegs.put(String.format(MemCacheUtils.USER_LOGIN_REG_KEY, data.username), loginRegistry);
             }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
@@ -78,6 +114,7 @@ public class LoginResource {
                     loginRegistry = updateLoginRegistryOnLoginFail(loginRegistry);
                     txn.update(loginRegistry);
                     txn.commit();
+                    memcacheLoginRegs.put(String.format(MemCacheUtils.USER_LOGIN_REG_KEY, data.username), loginRegistry);
                     return checkAccountStatus;
                 }
                 Timestamp time = Timestamp.now();
@@ -86,6 +123,7 @@ public class LoginResource {
                 txn.update(loginRegistry);
                 txn.put(loginLog);
                 txn.commit();
+                memcacheLoginRegs.put(String.format(MemCacheUtils.USER_LOGIN_REG_KEY, data.username), loginRegistry);
                 final String token = createToken(data.username, userOnDB);
                 LOG.fine("Correct password - generated token and logs");
                 return Response.ok(gson.toJson(token)).header(TokenUtils.AUTH_HEADER, TokenUtils.AUTH_TYPE + token).build();
@@ -93,6 +131,7 @@ public class LoginResource {
                 loginRegistry = updateLoginRegistryOnLoginFail(loginRegistry);
                 txn.update(loginRegistry);
                 txn.commit();
+                memcacheLoginRegs.put(String.format(MemCacheUtils.USER_LOGIN_REG_KEY, data.username), loginRegistry);
                 LOG.fine("Wrong password - updated logs");
                 return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
             }

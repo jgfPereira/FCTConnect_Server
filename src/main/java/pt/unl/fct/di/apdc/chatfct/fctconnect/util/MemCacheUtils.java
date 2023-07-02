@@ -9,11 +9,19 @@ import java.util.logging.Level;
 
 public final class MemCacheUtils {
 
-    private static final long EXPIRATION_TIME = 1;
+    public static final String USER_ENTITY_KEY = "user-entity-%s";
+    public static final String USER_LOGIN_REG_KEY = "user-loginReg-%s";
+    public static final String USER_NAMESPACE = "users";
+    public static final String LOGIN_REGISTRY_NAMESPACE = "loginRegs";
+    private static final long EXPIRATION_TIME = 1L;
     private final AsyncMemcacheService memcache;
 
     private MemCacheUtils(String namespace) {
         memcache = createMemCacheService(namespace);
+    }
+
+    public static MemCacheUtils getMemCache(String namespace) {
+        return new MemCacheUtils(namespace);
     }
 
     private static AsyncMemcacheService createMemCacheService(final String namespace) {
@@ -30,7 +38,7 @@ public final class MemCacheUtils {
         }
     }
 
-    private Boolean put(String key, Object value) {
+    public Boolean put(String key, Object value) {
         final Future<Boolean> future = memcache.put(key, value,
                 Expiration.byDeltaSeconds((int) TimeUnit.HOURS.toSeconds(EXPIRATION_TIME)),
                 MemcacheService.SetPolicy.SET_ALWAYS);
