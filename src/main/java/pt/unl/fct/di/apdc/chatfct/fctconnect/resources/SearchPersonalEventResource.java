@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-@Path("/listpersonalevents")
+@Path("/searchpersonalevent")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class SearchPersonalEventResource {
 
