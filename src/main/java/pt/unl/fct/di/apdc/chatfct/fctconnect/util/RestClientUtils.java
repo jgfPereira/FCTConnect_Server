@@ -9,10 +9,8 @@ public final class RestClientUtils {
 
     private static final String ADD_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addfriend";
     private static final String REMOVE_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removefriend";
-    private static final String GET_FRIENDS_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/getfriends";
     private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
-    private static final String GET_PLAYER_LOCATION_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/getlocation";
 
     private RestClientUtils() {
     }
@@ -31,14 +29,6 @@ public final class RestClientUtils {
                 .post(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
 
-    public static Response getFriends(String username) {
-        return ClientBuilder.newClient()
-                .target(GET_FRIENDS_URI_DB)
-                .path(username)
-                .request(MediaType.APPLICATION_JSON)
-                .get();
-    }
-
     public static Response postOnlinePlayer(AddOnlinePlayerData data) {
         return ClientBuilder.newClient()
                 .target(ADD_ONLINE_PLAYER_URI_DB)
@@ -52,13 +42,5 @@ public final class RestClientUtils {
                 .path(username)
                 .request(MediaType.APPLICATION_JSON)
                 .delete();
-    }
-
-    public static Response getPlayerLocation(String username) {
-        return ClientBuilder.newClient()
-                .target(GET_PLAYER_LOCATION_URI_DB)
-                .path(username)
-                .request(MediaType.APPLICATION_JSON)
-                .get();
     }
 }
