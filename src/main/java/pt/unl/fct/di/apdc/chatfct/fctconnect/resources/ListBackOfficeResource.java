@@ -56,7 +56,7 @@ public class ListBackOfficeResource {
             }
             Query<Entity> getUsersQuery = getRegularUsersQuery();
             QueryResults<Entity> allUsers = txn.run(getUsersQuery);
-            List<UserInfo> usersList = getRegularUsersList(allUsers);
+            List<UserInfo> usersList = getRegularUsersList(txn, allUsers);
             txn.commit();
             LOG.fine("Regular user listing complete");
             return Response.ok(gson.toJson(usersList)).build();
@@ -91,9 +91,9 @@ public class ListBackOfficeResource {
                 .build();
     }
 
-    private List<UserInfo> getRegularUsersList(QueryResults<Entity> allUsers) {
+    private List<UserInfo> getRegularUsersList(Transaction txn, QueryResults<Entity> allUsers) {
         List<UserInfo> usersList = new ArrayList<>();
-        allUsers.forEachRemaining(user -> addUserToListBasedOnRole(usersList, user));
+        allUsers.forEachRemaining(user -> addUserToListBasedOnRole(txn, usersList, user));
         return usersList;
     }
 
@@ -105,39 +105,29 @@ public class ListBackOfficeResource {
         return user.getKey().getName();
     }
 
-    private Key getStudentUserKey(String username) {
-        return datastore.newKeyFactory().setKind(DatastoreTypes.STUDENT_TYPE)
+    private Key getSpecificUserKey(String username, String role) {
+        return datastore.newKeyFactory().setKind(DatastoreTypes.formatRoleType(role))
                 .addAncestors(PathElement.of(DatastoreTypes.USER_TYPE, username)).newKey(username);
     }
 
-    private Entity getStudentEntity(final String username) {
-        final Key studentUserKey = getStudentUserKey(username);
-        Transaction txn = datastore.newTransaction();
-        try {
-            final Entity studentOnDB = txn.get(studentUserKey);
-            txn.commit();
-            LOG.fine("Student user fetched");
-            return studentOnDB;
-        } catch (Exception e) {
-            txn.rollback();
-            LOG.severe(e.getLocalizedMessage());
-            return null;
-        } finally {
-            if (txn.isActive()) {
-                txn.rollback();
-                return null;
-            }
-        }
+    private Entity getSpecificUser(Transaction txn, Entity user) {
+        final String role = user.getString(DatastoreTypes.ROLE_ATTR);
+        final String username = user.getKey().getName();
+        final Key key = getSpecificUserKey(username, role);
+        return txn.get(key);
     }
 
-    private void addUserToListBasedOnRole(List<UserInfo> usersList, Entity user) {
-        final String username = getUserUsername(user);
+    private void addUserToListBasedOnRole(Transaction txn, List<UserInfo> usersList, Entity user) {
         final String role = getUserRole(user);
-        if (role.matches(RegexExp.ROLE_OTHER_REGEX)) {
-            usersList.add(UserInfo.createUserInfo(user));
-        } else {
-            Entity studentUser = getStudentEntity(username);
+        if (role.matches(RegexExp.ROLE_STUDENT_REGEX)) {
+            Entity studentUser = getSpecificUser(txn, user);
             usersList.add(UserInfoStudent.createUserInfoStudent(user, studentUser));
+        } else if (role.matches(RegexExp.ROLE_PROFESSOR_REGEX)) {
+            Entity professorUser = getSpecificUser(txn, user);
+            usersList.add(UserInfoProfessor.createUserInfoProfessor(user, professorUser));
+        } else {
+            Entity employeeUser = getSpecificUser(txn, user);
+            usersList.add(UserInfoEmployee.createUserInfoEmployee(user, employeeUser));
         }
     }
 

@@ -22,6 +22,7 @@ public class ListedUserEmployee extends ListedUser {
         final String photo = handleNull(entity.getString(DatastoreTypes.PHOTO_ATTR));
         return new ListedUserEmployee(name, email, role, creationDate, photo, department, jobTitle);
     }
+    
 
     @Override
     public String toString() {
