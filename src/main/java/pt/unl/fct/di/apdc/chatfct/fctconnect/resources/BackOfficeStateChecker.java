@@ -23,6 +23,7 @@ public class BackOfficeStateChecker {
     private static final Logger LOG = Logger.getLogger(BackOfficeStateChecker.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public BackOfficeStateChecker() {
@@ -32,12 +33,29 @@ public class BackOfficeStateChecker {
         return new BackOfficeStateChecker().checkState(username);
     }
 
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
+    }
+
     private Response checkState(final String username) {
         LOG.fine("Checking back office user state");
         Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity backOfficeUserOnDB = txn.get(key);
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(key);
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
+            }
             final boolean isApproved = isApproved(backOfficeUserOnDB);
             if (!isApproved) {
                 txn.rollback();
@@ -84,12 +102,33 @@ public class BackOfficeStateChecker {
         Key otherKey = backOfficeUserKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity usernameOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                usernameOnDB = userCached;
+            } else {
+                usernameOnDB = txn.get(usernameKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(usernameOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), usernameOnDB);
+            }
+            Entity otherOnDB;
+            final Entity otherCached = getBackOfficeUserCached(data.username);
+            final boolean isOtherCached = isCached(otherCached);
+            if (isOtherCached) {
+                otherOnDB = otherCached;
+            } else {
+                otherOnDB = txn.get(otherKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(otherOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, data.username), otherOnDB);
             }
             final Response canApproveAccount = canApproveAccount(role);
             if (canApproveAccount != null) {
@@ -102,6 +141,7 @@ public class BackOfficeStateChecker {
                 return checkAccountState;
             }
             Entity userChanged = approveAccount(otherOnDB);
+            memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, data.username), userChanged);
             txn.update(userChanged);
             txn.commit();
             LOG.fine("Account has been successfully approved");
@@ -126,10 +166,10 @@ public class BackOfficeStateChecker {
         return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
     }
 
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+    private Response checkBackOfficeUserOnDB(Entity backOfficeUserOnDB) {
+        if (backOfficeUserOnDB == null) {
+            LOG.fine("Backoffice user does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - Backoffice user does not exist")).build();
         }
         return null;
     }

@@ -17,16 +17,13 @@ import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Path("/utils")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class ComputationResource {
-
-    private static final Logger LOG = Logger.getLogger(ComputationResource.class.getName());
-    private static final DateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSz");
-    private final Gson g = new Gson();
+    
+    private static final DateFormat FMT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSz");
+    private final Gson gson = new Gson();
 
     public ComputationResource() {
     }
@@ -36,10 +33,8 @@ public class ComputationResource {
     @Produces(MediaType.TEXT_PLAIN)
     public Response hello() {
         try {
-            LOG.fine("Saying hello");
             return Response.ok().entity("Hello").build();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Exception on method /hello", e);
             return Response.temporaryRedirect(URI.create("/error/500.html")).build();
         }
     }
@@ -47,19 +42,15 @@ public class ComputationResource {
     @GET
     @Path("/time")
     public Response getCurrentTime() {
-        LOG.fine("Replying to date request.");
-        return Response.ok().entity(g.toJson(fmt.format(new Date()))).build();
+        return Response.ok().entity(gson.toJson(FMT.format(new Date()))).build();
     }
 
     @POST
     @Path("/compute")
     public Response executeComputeTask() {
-        LOG.fine("Starting to execute computation task");
         try {
             Thread.sleep(60 * 1000 * 10); // 10 min
         } catch (Exception e) {
-            LOG.logp(Level.SEVERE, this.getClass().getCanonicalName(), "executeComputeTask", "An exception has ocurred",
-                    e);
             return Response.serverError().build();
         }
         return Response.ok().build();
@@ -71,7 +62,6 @@ public class ComputationResource {
         String projectId = "fctconnect23";
         String queueName = "default";
         String location = "europe-west6";
-        LOG.log(Level.INFO, projectId + " :: " + queueName + " :: " + location);
         try (CloudTasksClient client = CloudTasksClient.create()) {
             String queuePath = QueueName.of(projectId, location, queueName).toString();
             Task.Builder taskBuilder = Task.newBuilder().setAppEngineHttpRequest(AppEngineHttpRequest.newBuilder()
