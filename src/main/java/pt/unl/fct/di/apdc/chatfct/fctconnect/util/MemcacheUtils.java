@@ -22,6 +22,8 @@ public final class MemcacheUtils {
     public static final String EVENT_ENTITY_KEY = "event-entity-%s";
     public static final String PERSONAL_EVENTS_NAMESPACE = "personalEvents";
     public static final String PERSONAL_EVENT_ENTITY_KEY = "personal-event-entity-%s";
+    public static final String SPECIFIC_USERS_NAMESPACE = "specificUsers";
+    public static final String SPECIFIC_USER_ENTITY_KEY = "specific-user-entity-%s";
     private static final long EXPIRATION_TIME = 1L;
     private final MemcacheService memcache;
 
