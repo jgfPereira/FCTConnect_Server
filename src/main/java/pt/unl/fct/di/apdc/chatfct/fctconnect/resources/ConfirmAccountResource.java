@@ -4,6 +4,7 @@ import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,9 +34,19 @@ public class ConfirmAccountResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory accountConfirmationFactory = datastore.newKeyFactory().setKind(DatastoreTypes.ACCOUNT_CONFIRMATION_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public ConfirmAccountResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @GET
@@ -59,13 +70,23 @@ public class ConfirmAccountResource {
                 LOG.fine("Account confirmation has expired");
                 return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Unauthorized - account confirmation has expired")).build();
             }
-            final Entity user = getUserOnDB(txn, accountConfOnDB);
-            final Response checkUserOnDB = checkUserOnDB(user);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity user;
+            final String username = getUsername(accountConfOnDB);
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                user = userCached;
+            } else {
+                user = getUserOnDB(txn, username);
+                final Response checkUserOnDB = checkUserOnDB(user);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), user);
             }
             final Entity confirmedUser = confirmUser(user);
+            memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), user);
             txn.update(confirmedUser);
             txn.delete(key);
             txn.commit();
@@ -113,10 +134,12 @@ public class ConfirmAccountResource {
         return i.atZone(ZoneId.of(DEFAULT_TIME_ZONE)).toInstant();
     }
 
-    private Entity getUserOnDB(Transaction txn, Entity accountConfOnDB) {
-        final String username = accountConfOnDB.getString(DatastoreTypes.USERNAME_ACCOUNT_CONF);
-        Key key = userKeyFactory.newKey(username);
-        return txn.get(key);
+    private String getUsername(Entity accountConfOnDB) {
+        return accountConfOnDB.getString(DatastoreTypes.USERNAME_ACCOUNT_CONF);
+    }
+
+    private Entity getUserOnDB(Transaction txn, String username) {
+        return txn.get(userKeyFactory.newKey(username));
     }
 
     private Response checkUserOnDB(Entity userOnDB) {
