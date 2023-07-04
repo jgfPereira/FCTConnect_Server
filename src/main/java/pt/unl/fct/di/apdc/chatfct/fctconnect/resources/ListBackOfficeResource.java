@@ -24,9 +24,19 @@ public class ListBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(ListBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public ListBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -43,11 +53,19 @@ public class ListBackOfficeResource {
         Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), userOnDB);
             }
             final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
             if (!isResponseOK(checkAccountState)) {
