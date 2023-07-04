@@ -2,6 +2,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,19 +13,37 @@ public class GetLocationsResource {
     private static final Logger LOG = Logger.getLogger(GetLocationsResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory locationsKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.LOCATIONS_TYPE);
+    private final MemcacheUtils memcacheLocations = MemcacheUtils.getMemcache(MemcacheUtils.LOCATIONS_NAMESPACE);
 
     public GetLocationsResource() {
+    }
+
+    private Entity getLocationsCached(String locsKey) {
+        final String key = String.format(MemcacheUtils.LOCATIONS_ENTITY_KEY, locsKey);
+        return memcacheLocations.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     public List<String> getLocations() {
         Key key = locationsKeyFactory.newKey(DatastoreTypes.LOCATIONS_TYPE_KEY);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity locationsOnDB = txn.get(key);
-            final boolean checkLocationsOnDB = checkLocationsOnDB(locationsOnDB);
-            if (!checkLocationsOnDB) {
-                txn.rollback();
-                return null;
+            Entity locationsOnDB;
+            final Entity locationsCached = getLocationsCached(DatastoreTypes.LOCATIONS_TYPE_KEY);
+            final boolean isLocationsCached = isCached(locationsCached);
+            if (isLocationsCached) {
+                locationsOnDB = locationsCached;
+            } else {
+                locationsOnDB = txn.get(key);
+                final boolean checkLocationsOnDB = checkLocationsOnDB(locationsOnDB);
+                if (!checkLocationsOnDB) {
+                    txn.rollback();
+                    return null;
+                }
+                memcacheLocations.put(String.format(MemcacheUtils.LOCATIONS_ENTITY_KEY, DatastoreTypes.LOCATIONS_TYPE_KEY), locationsOnDB);
             }
             final List<String> allLocations = getLocationsList(locationsOnDB);
             txn.commit();
