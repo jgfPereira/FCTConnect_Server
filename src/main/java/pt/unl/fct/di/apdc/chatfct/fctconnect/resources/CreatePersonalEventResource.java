@@ -4,10 +4,7 @@ import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.CreatePersonalEventData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -28,9 +25,20 @@ public class CreatePersonalEventResource {
     private static final Logger LOG = Logger.getLogger(CreatePersonalEventResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcachePersonalEvents = MemcacheUtils.getMemcache(MemcacheUtils.PERSONAL_EVENTS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public CreatePersonalEventResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -53,13 +61,22 @@ public class CreatePersonalEventResource {
         Key personalEventKey = createPersonalEventKey(username, id);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity userOnDB = txn.get(userKey);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(userKey);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             final Entity personalEventCreated = createPersonalEvent(personalEventKey, data);
+            memcachePersonalEvents.put(String.format(MemcacheUtils.PERSONAL_EVENT_ENTITY_KEY, id), personalEventCreated);
             txn.put(personalEventCreated);
             txn.commit();
             LOG.info("Personal event was created - " + id);
