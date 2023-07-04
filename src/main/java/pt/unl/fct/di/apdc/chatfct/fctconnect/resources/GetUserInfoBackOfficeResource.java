@@ -195,12 +195,33 @@ public class GetUserInfoBackOfficeResource {
         Key otherKey = backOfficeUserKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = null;//checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity usernameOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                usernameOnDB = userCached;
+            } else {
+                usernameOnDB = txn.get(usernameKey);
+                final Response checkUserOnDB = checkUserOnDB(usernameOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), usernameOnDB);
+            }
+            Entity otherOnDB;
+            final Entity otherCached = getBackOfficeUserCached(otherUsername);
+            final boolean isOtherCached = isCached(otherCached);
+            if (isOtherCached) {
+                otherOnDB = otherCached;
+            } else {
+                otherOnDB = txn.get(otherKey);
+                final Response checkUserOnDB = checkUserOnDB(otherOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, otherUsername), otherOnDB);
             }
             final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
             if (!isResponseOK(checkAccountState)) {
