@@ -24,9 +24,25 @@ public class AddLocationsResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory locationsKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.LOCATIONS_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheLocations = MemcacheUtils.getMemcache(MemcacheUtils.LOCATIONS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public AddLocationsResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getLocationsCached(String locsKey) {
+        final String key = String.format(MemcacheUtils.LOCATIONS_ENTITY_KEY, locsKey);
+        return memcacheLocations.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -50,24 +66,43 @@ public class AddLocationsResource {
         Key locationsKey = locationsKeyFactory.newKey(DatastoreTypes.LOCATIONS_TYPE_KEY);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
-            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity backOfficeUserOnDB;
+            final Entity backOfficeUserCached = getBackOfficeUserCached(username);
+            final boolean isBackOfficeUserCached = isCached(backOfficeUserCached);
+            if (isBackOfficeUserCached) {
+                backOfficeUserOnDB = backOfficeUserCached;
+            } else {
+                backOfficeUserOnDB = txn.get(backOfficeUserKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
             }
             final Response canAddLocations = canAddLocations(role);
             if (canAddLocations != null) {
                 txn.rollback();
                 return canAddLocations;
             }
-            final Entity locationsOnDB = txn.get(locationsKey);
-            final Response checkLocationsOnDB = checkLocationsOnDB(locationsOnDB);
-            if (checkLocationsOnDB != null) {
+            Entity locationsOnDB;
+            final Entity locationsCached = getLocationsCached(DatastoreTypes.LOCATIONS_TYPE_KEY);
+            final boolean isLocationsCached = isCached(locationsCached);
+            if (isLocationsCached) {
                 txn.rollback();
-                return checkLocationsOnDB;
+                LOG.fine("Locations already exist");
+                return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - Locations already exist")).build();
+            } else {
+                locationsOnDB = txn.get(locationsKey);
+                final Response checkLocationsOnDB = checkLocationsOnDB(locationsOnDB);
+                if (checkLocationsOnDB != null) {
+                    memcacheLocations.put(String.format(MemcacheUtils.LOCATIONS_ENTITY_KEY, DatastoreTypes.LOCATIONS_TYPE_KEY), locationsOnDB);
+                    txn.rollback();
+                    return checkLocationsOnDB;
+                }
             }
             final Entity locationsCreated = createLocations(locationsKey, data);
+            memcacheLocations.put(String.format(MemcacheUtils.LOCATIONS_ENTITY_KEY, DatastoreTypes.LOCATIONS_TYPE_KEY), locationsCreated);
             txn.put(locationsCreated);
             txn.commit();
             LOG.info("Locations was added successfully");
