@@ -22,9 +22,25 @@ public class GetUserInfoResource {
     private static final Logger LOG = Logger.getLogger(GetUserInfoResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcacheSpecificUsers = MemcacheUtils.getMemcache(MemcacheUtils.SPECIFIC_USERS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public GetUserInfoResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getSpecificUserCached(String username) {
+        final String key = String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username);
+        return memcacheSpecificUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @GET
@@ -41,14 +57,30 @@ public class GetUserInfoResource {
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             final Key specificUserKey = getSpecificUserKey(username, role);
-            final Entity specificUserOnDB = txn.get(specificUserKey);
+            Entity specificUserOnDB;
+            final Entity specificUserCached = getSpecificUserCached(username);
+            final boolean isSpecificUserCached = isCached(specificUserCached);
+            if (isSpecificUserCached) {
+                specificUserOnDB = specificUserCached;
+            } else {
+                specificUserOnDB = txn.get(specificUserKey);
+                memcacheSpecificUsers.put(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username), specificUserOnDB);
+            }
             final Response resp = getUserInfo(userOnDB, specificUserOnDB, role);
             txn.commit();
             LOG.fine("User info fetched");
