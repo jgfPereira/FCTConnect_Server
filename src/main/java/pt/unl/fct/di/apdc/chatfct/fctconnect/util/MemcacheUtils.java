@@ -18,6 +18,8 @@ public final class MemcacheUtils {
     public static final String BACK_OFFICE_USER_ENTITY_KEY = "bo-user-entity-%s";
     public static final String LOCATIONS_NAMESPACE = "locations";
     public static final String LOCATIONS_ENTITY_KEY = "locations-entity-%s";
+    public static final String EVENTS_NAMESPACE = "events";
+    public static final String EVENT_ENTITY_KEY = "event-entity-%s";
     private static final long EXPIRATION_TIME = 1L;
     private final MemcacheService memcache;
 

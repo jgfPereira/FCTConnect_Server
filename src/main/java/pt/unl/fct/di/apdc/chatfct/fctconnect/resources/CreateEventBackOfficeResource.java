@@ -26,9 +26,25 @@ public class CreateEventBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheEvents = MemcacheUtils.getMemcache(MemcacheUtils.EVENTS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public CreateEventBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getEventCached(String id) {
+        final String key = String.format(MemcacheUtils.EVENT_ENTITY_KEY, id);
+        return memcacheEvents.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -52,24 +68,43 @@ public class CreateEventBackOfficeResource {
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
-            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(backOfficeUserKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
             }
             final Response canCreateEvent = canCreateEvent(role);
             if (canCreateEvent != null) {
                 txn.rollback();
                 return canCreateEvent;
             }
-            final Entity eventOnDB = txn.get(eventKey);
-            final Response checkEventOnDB = checkEventOnDB(eventOnDB);
-            if (checkEventOnDB != null) {
+            Entity eventOnDB;
+            final Entity eventCached = getEventCached(data.id);
+            final boolean isEventCached = isCached(eventCached);
+            if (isEventCached) {
                 txn.rollback();
-                return checkEventOnDB;
+                LOG.fine("Event already exist");
+                return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - Event already exist")).build();
+            } else {
+                eventOnDB = txn.get(eventKey);
+                final Response checkEventOnDB = checkEventOnDB(eventOnDB);
+                if (checkEventOnDB != null) {
+                    memcacheEvents.put(String.format(MemcacheUtils.EVENT_ENTITY_KEY, data.id), eventOnDB);
+                    txn.rollback();
+                    return checkEventOnDB;
+                }
             }
             final Entity eventCreated = createEvent(eventKey, data);
+            memcacheEvents.put(String.format(MemcacheUtils.EVENT_ENTITY_KEY, data.id), eventCreated);
             txn.put(eventCreated);
             txn.commit();
             LOG.info("Event was created - " + data.id);
