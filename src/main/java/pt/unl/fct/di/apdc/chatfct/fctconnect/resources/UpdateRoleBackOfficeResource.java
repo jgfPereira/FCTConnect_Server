@@ -130,7 +130,7 @@ public class UpdateRoleBackOfficeResource {
         }
         return null;
     }
-    
+
     private boolean isResponseOK(Response r) {
         return r.getStatus() == Response.Status.OK.getStatusCode();
     }
