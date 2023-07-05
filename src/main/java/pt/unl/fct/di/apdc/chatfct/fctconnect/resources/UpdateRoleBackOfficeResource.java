@@ -23,9 +23,19 @@ public class UpdateRoleBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(UpdateRoleBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public UpdateRoleBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @PUT
@@ -48,12 +58,33 @@ public class UpdateRoleBackOfficeResource {
         Key otherKey = backOfficeUserKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity usernameOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                usernameOnDB = userCached;
+            } else {
+                usernameOnDB = txn.get(usernameKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(usernameOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), usernameOnDB);
+            }
+            Entity otherOnDB;
+            final Entity otherCached = getBackOfficeUserCached(data.username);
+            final boolean isOtherCached = isCached(otherCached);
+            if (isOtherCached) {
+                otherOnDB = otherCached;
+            } else {
+                otherOnDB = txn.get(otherKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(otherOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, data.username), otherOnDB);
             }
             final String otherRole = getOtherRole(otherOnDB);
             final Response canUpdateRole = canUpdateRole(role, otherRole);
@@ -67,6 +98,7 @@ public class UpdateRoleBackOfficeResource {
                 return checkAccountState;
             }
             Entity userChanged = updateRole(otherOnDB);
+            memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, data.username), userChanged);
             txn.update(userChanged);
             txn.commit();
             LOG.fine("Role has been successfully updated");
@@ -91,14 +123,14 @@ public class UpdateRoleBackOfficeResource {
         return check ? null : Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
     }
 
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+    private Response checkBackOfficeUserOnDB(Entity backOfficeUserOnDB) {
+        if (backOfficeUserOnDB == null) {
+            LOG.fine("Backoffice user does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - Backoffice user does not exist")).build();
         }
         return null;
     }
-
+    
     private boolean isResponseOK(Response r) {
         return r.getStatus() == Response.Status.OK.getStatusCode();
     }
