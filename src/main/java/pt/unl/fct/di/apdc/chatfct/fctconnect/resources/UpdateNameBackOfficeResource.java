@@ -3,10 +3,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeUpdateNameData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -26,9 +23,19 @@ public class UpdateNameBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(UpdateNameBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public UpdateNameBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @PUT
@@ -49,11 +56,19 @@ public class UpdateNameBackOfficeResource {
         Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity user = txn.get(key);
-            final Response checkUsersOnDB = checkUserOnDB(user);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity user;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                user = userCached;
+            } else {
+                user = txn.get(key);
+                final Response checkUsersOnDB = checkUserOnDB(user);
+                if (checkUsersOnDB != null) {
+                    txn.rollback();
+                    return checkUsersOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), user);
             }
             final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
             if (!isResponseOK(checkAccountState)) {
@@ -61,6 +76,7 @@ public class UpdateNameBackOfficeResource {
                 return checkAccountState;
             }
             Entity userChanged = updateName(user, data.name);
+            memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), userChanged);
             txn.update(userChanged);
             txn.commit();
             LOG.fine("Name has been successfully updated");
