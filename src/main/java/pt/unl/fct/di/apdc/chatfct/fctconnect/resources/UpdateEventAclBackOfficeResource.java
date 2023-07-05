@@ -27,9 +27,25 @@ public class UpdateEventAclBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory eventKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.EVENT_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheEvents = MemcacheUtils.getMemcache(MemcacheUtils.EVENTS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public UpdateEventAclBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getEventCached(String id) {
+        final String key = String.format(MemcacheUtils.EVENT_ENTITY_KEY, id);
+        return memcacheEvents.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @PUT
@@ -53,24 +69,40 @@ public class UpdateEventAclBackOfficeResource {
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
-            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(backOfficeUserKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
             }
             final Response canUpdateEvent = canUpdateEvent(role);
             if (canUpdateEvent != null) {
                 txn.rollback();
                 return canUpdateEvent;
             }
-            final Entity eventOnDB = txn.get(eventKey);
-            final Response checkEventOnDB = checkEventOnDB(eventOnDB);
-            if (checkEventOnDB != null) {
-                txn.rollback();
-                return checkEventOnDB;
+            Entity eventOnDB;
+            final Entity eventCached = getEventCached(data.id);
+            final boolean isEventCached = isCached(eventCached);
+            if (isEventCached) {
+                eventOnDB = eventCached;
+            } else {
+                eventOnDB = txn.get(eventKey);
+                final Response checkEventOnDB = checkEventOnDB(eventOnDB);
+                if (checkEventOnDB != null) {
+                    txn.rollback();
+                    return checkEventOnDB;
+                }
             }
             final Entity updatedEvent = addAclTag(eventOnDB, data);
+            memcacheEvents.put(String.format(MemcacheUtils.EVENT_ENTITY_KEY, data.id), updatedEvent);
             txn.update(updatedEvent);
             txn.commit();
             LOG.info("ACL tag was added to event");
