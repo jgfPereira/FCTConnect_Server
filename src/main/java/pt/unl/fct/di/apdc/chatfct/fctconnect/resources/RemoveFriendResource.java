@@ -23,9 +23,19 @@ public class RemoveFriendResource {
     private static final Logger LOG = Logger.getLogger(RemoveFriendResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RemoveFriendResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -47,12 +57,33 @@ public class RemoveFriendResource {
         Key otherKey = userKeyFactory.newKey(data.removeFriend);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity usernameOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                usernameOnDB = userCached;
+            } else {
+                usernameOnDB = txn.get(usernameKey);
+                final Response checkUserOnDB = checkUserOnDB(usernameOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), usernameOnDB);
+            }
+            Entity otherOnDB;
+            final Entity otherCached = getUserCached(data.removeFriend);
+            final boolean isOtherCached = isCached(otherCached);
+            if (isOtherCached) {
+                otherOnDB = otherCached;
+            } else {
+                otherOnDB = txn.get(otherKey);
+                final Response checkUserOnDB = checkUserOnDB(otherOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, data.removeFriend), otherOnDB);
             }
             final Response deleteFriendDBRequest = RestClientUtils.deleteFriend(data);
             if (deleteFriendDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
@@ -86,10 +117,10 @@ public class RemoveFriendResource {
         return null;
     }
 
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+    private Response checkUserOnDB(Entity user) {
+        if (user == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - user does not exist")).build();
         }
         return null;
     }
