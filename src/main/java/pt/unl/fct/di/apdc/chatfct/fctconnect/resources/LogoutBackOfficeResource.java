@@ -1,11 +1,7 @@
 package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
-import com.google.cloud.datastore.Datastore;
-import com.google.cloud.datastore.DatastoreOptions;
-import com.google.cloud.datastore.KeyFactory;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
@@ -24,8 +20,6 @@ import java.util.logging.Logger;
 public class LogoutBackOfficeResource {
 
     private static final Logger LOG = Logger.getLogger(LogoutBackOfficeResource.class.getName());
-    private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
-    private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final Gson gson = new Gson();
 
     public LogoutBackOfficeResource() {
