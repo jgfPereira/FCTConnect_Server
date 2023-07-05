@@ -11,13 +11,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 public final class TokenUtils {
 
     public static final String AUTH_HEADER = "X-Auth-Token";
     public static final String AUTH_TYPE = "Bearer ";
-    private static final Logger LOG = Logger.getLogger(TokenUtils.class.getName());
     private static final int EXPIRATION_WINDOW = 7200000; // 2 hours
     private static final String TOKEN_DELIMITER = " ";
     private static final String ROLE_ATTR = "role";

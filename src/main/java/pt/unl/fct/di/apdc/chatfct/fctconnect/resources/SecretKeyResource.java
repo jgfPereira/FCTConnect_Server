@@ -66,6 +66,7 @@ public class SecretKeyResource {
             final boolean isSecretKeyEntityCached = isCached(secretKeyEntityCached);
             if (isSecretKeyEntityCached) {
                 secretKeyOnDB = secretKeyEntityCached;
+                // TODO already exist
             } else {
                 secretKeyOnDB = txn.get(key);
                 final Response checkSecretKeyOnDB = checkSecretKeyOnDB(secretKeyOnDB);

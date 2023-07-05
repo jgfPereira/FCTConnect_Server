@@ -4,6 +4,7 @@ import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 
 import javax.ws.rs.core.Response;
 import java.time.Duration;
@@ -15,27 +16,47 @@ import java.util.logging.Logger;
 
 public class TokenRevocationListResource {
 
+    private static final int TOKEN_REVOKED_EXP_TIME_CACHE = 10;
     private static final String DEFAULT_TIME_ZONE = "UTC";
     private static final Duration TWO_HOURS_DURATION = Duration.ofHours(2);
     private static final Logger LOG = Logger.getLogger(TokenRevocationListResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory tokenRevokedFactory = datastore.newKeyFactory().setKind(DatastoreTypes.TOKEN_REVOKED_TYPE);
+    private final MemcacheUtils memcacheTokensRevoked = MemcacheUtils.getMemcache(MemcacheUtils.TOKENS_REVOKED_NAMESPACE);
     private final Gson gson = new Gson();
 
     public TokenRevocationListResource() {
+    }
+
+    private Entity getTokenRevokedCached(String id) {
+        return memcacheTokensRevoked.get(String.format(MemcacheUtils.TOKEN_REVOKED_ENTITY, id), Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     public Response revokeToken(final String tokenID) {
         Key key = tokenRevokedFactory.newKey(tokenID);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity tokenRevokedOnDB = txn.get(key);
-            final Response checkTokenRevokedOnDB = checkTokenRevokedOnDB(tokenRevokedOnDB);
-            if (checkTokenRevokedOnDB != null) {
-                txn.rollback();
-                return checkTokenRevokedOnDB;
+            Entity tokenRevokedOnDB;
+            final Entity tokenRevokedCached = getTokenRevokedCached(tokenID);
+            final boolean isTokenRevokedCached = isCached(tokenRevokedCached);
+            if (isTokenRevokedCached) {
+                LOG.fine("Token was already revoked");
+                return Response.ok(gson.toJson("Logout was successful - token was already revoked")).build();
+            } else {
+                tokenRevokedOnDB = txn.get(key);
+                final Response checkTokenRevokedOnDB = checkTokenRevokedOnDB(tokenRevokedOnDB);
+                if (checkTokenRevokedOnDB != null) {
+                    memcacheTokensRevoked.put(String.format(MemcacheUtils.TOKEN_REVOKED_ENTITY, tokenID), tokenRevokedOnDB, TOKEN_REVOKED_EXP_TIME_CACHE);
+                    txn.rollback();
+                    return checkTokenRevokedOnDB;
+                }
             }
             Entity tokenRevokedEntity = createTokenRevoked(key);
+            memcacheTokensRevoked.put(String.format(MemcacheUtils.TOKEN_REVOKED_ENTITY, tokenID), tokenRevokedEntity, TOKEN_REVOKED_EXP_TIME_CACHE);
             txn.put(tokenRevokedEntity);
             txn.commit();
             LOG.fine("Logout was successful - token revoked");
@@ -83,7 +104,17 @@ public class TokenRevocationListResource {
         Key key = tokenRevokedFactory.newKey(tokenID);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity tokenRevokedOnDB = txn.get(key);
+            Entity tokenRevokedOnDB;
+            final Entity tokenRevokedCached = getTokenRevokedCached(tokenID);
+            final boolean isTokenRevokedCached = isCached(tokenRevokedCached);
+            if (isTokenRevokedCached) {
+                tokenRevokedOnDB = tokenRevokedCached;
+            } else {
+                tokenRevokedOnDB = txn.get(key);
+                if (tokenRevokedOnDB != null) {
+                    memcacheTokensRevoked.put(String.format(MemcacheUtils.TOKEN_REVOKED_ENTITY, tokenID), tokenRevokedOnDB, TOKEN_REVOKED_EXP_TIME_CACHE);
+                }
+            }
             txn.commit();
             return tokenRevokedOnDB != null ? Boolean.TRUE : Boolean.FALSE;
         } catch (Exception e) {
@@ -114,6 +145,7 @@ public class TokenRevocationListResource {
         allRevokedTokens.forEachRemaining(token -> {
             if (checkSafeTokenRemoval(token)) {
                 keys.add(token.getKey());
+                memcacheTokensRevoked.delete(String.format(MemcacheUtils.TOKEN_REVOKED_ENTITY, token.getKey().getName()));
             }
         });
         return keys.toArray(new Key[keys.size()]);

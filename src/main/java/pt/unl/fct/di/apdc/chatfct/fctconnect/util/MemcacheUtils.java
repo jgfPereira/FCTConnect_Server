@@ -27,6 +27,8 @@ public final class MemcacheUtils {
     public static final String SECRET_KEYS_NAMESPACE = "secretKeys";
     public static final String SECRET_KEY_ENTITY_KEY = "secret-key-entity";
     public static final String SECRET_KEY_TOKENS_KEY = "secret-key-tokens";
+    public static final String TOKENS_REVOKED_NAMESPACE = "tokensRevoked";
+    public static final String TOKEN_REVOKED_ENTITY = "token-revoked-entity-%s";
     private static final long EXPIRATION_TIME = 1L;
     private final MemcacheService memcache;
 
