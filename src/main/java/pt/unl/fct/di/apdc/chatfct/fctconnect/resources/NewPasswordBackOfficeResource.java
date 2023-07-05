@@ -23,9 +23,19 @@ public class NewPasswordBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(NewPasswordBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public NewPasswordBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @PUT
@@ -46,11 +56,19 @@ public class NewPasswordBackOfficeResource {
         Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), userOnDB);
             }
             final Response checkAccountState = BackOfficeStateChecker.checkAccountState(username);
             if (!isResponseOK(checkAccountState)) {
@@ -63,6 +81,7 @@ public class NewPasswordBackOfficeResource {
                 return checkPassword;
             }
             Entity userChanged = updatePassword(userOnDB, data.newPassword);
+            memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), userChanged);
             txn.update(userChanged);
             txn.commit();
             LOG.fine("Password changed successfully");
