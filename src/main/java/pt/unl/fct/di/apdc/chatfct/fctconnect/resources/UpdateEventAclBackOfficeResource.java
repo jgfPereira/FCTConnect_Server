@@ -208,22 +208,38 @@ public class UpdateEventAclBackOfficeResource {
         Key eventKey = eventKeyFactory.newKey(data.id);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity backOfficeUserOnDB = txn.get(backOfficeUserKey);
-            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(backOfficeUserKey);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
             }
             final Response canUpdateEvent = canUpdateEvent(role);
             if (canUpdateEvent != null) {
                 txn.rollback();
                 return canUpdateEvent;
             }
-            final Entity eventOnDB = txn.get(eventKey);
-            final Response checkEventOnDB = checkEventOnDB(eventOnDB);
-            if (checkEventOnDB != null) {
-                txn.rollback();
-                return checkEventOnDB;
+            Entity eventOnDB;
+            final Entity eventCached = getEventCached(data.id);
+            final boolean isEventCached = isCached(eventCached);
+            if (isEventCached) {
+                eventOnDB = eventCached;
+            } else {
+                eventOnDB = txn.get(eventKey);
+                final Response checkEventOnDB = checkEventOnDB(eventOnDB);
+                if (checkEventOnDB != null) {
+                    txn.rollback();
+                    return checkEventOnDB;
+                }
+                memcacheEvents.put(String.format(MemcacheUtils.EVENT_ENTITY_KEY, data.id), eventOnDB);
             }
             final Response resp = removeAclTag(txn, eventOnDB, data);
             txn.commit();
@@ -269,8 +285,10 @@ public class UpdateEventAclBackOfficeResource {
         acl.remove(data.tag);
         final String[] updatedAcl = acl.toArray(new String[acl.size()]);
         eb.set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(DatastoreTypes.getAclFirst(updatedAcl), DatastoreTypes.getAclRest(updatedAcl)));
-        txn.update(eb.build());
+        final Entity updatedEvent = eb.build();
+        txn.update(updatedEvent);
         LOG.info("ACL tag was removed - " + data.tag);
+        memcacheEvents.put(String.format(MemcacheUtils.EVENT_ENTITY_KEY, data.id), updatedEvent);
         return Response.ok(gson.toJson("ACL tag was removed - " + data.tag)).build();
     }
 }
