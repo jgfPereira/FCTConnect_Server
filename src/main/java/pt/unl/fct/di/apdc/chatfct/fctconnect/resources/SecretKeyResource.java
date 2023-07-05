@@ -65,19 +65,19 @@ public class SecretKeyResource {
             final Entity secretKeyEntityCached = getSecretKeyEntityCached();
             final boolean isSecretKeyEntityCached = isCached(secretKeyEntityCached);
             if (isSecretKeyEntityCached) {
-                secretKeyOnDB = secretKeyEntityCached;
-                // TODO already exist
+                LOG.fine("Secret key was already generated");
+                return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - Secret key was already generated")).build();
             } else {
                 secretKeyOnDB = txn.get(key);
                 final Response checkSecretKeyOnDB = checkSecretKeyOnDB(secretKeyOnDB);
                 if (checkSecretKeyOnDB != null) {
-                    memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB);
+                    memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB,SECRET_KEY_EXP_TIME_CACHE);
                     txn.rollback();
                     return checkSecretKeyOnDB;
                 }
             }
             final Entity secretKeyEntity = createSecretKey(secretKeyData, key);
-            memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyEntity);
+            memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyEntity,SECRET_KEY_EXP_TIME_CACHE);
             txn.put(secretKeyEntity);
             txn.commit();
             LOG.fine("Secret key was created");
@@ -160,7 +160,7 @@ public class SecretKeyResource {
                     txn.rollback();
                     return null;
                 }
-                memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB);
+                memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB,SECRET_KEY_EXP_TIME_CACHE);
             }
             byte[][] secretKeyData = extractSecretKeyData(secretKeyOnDB);
             txn.commit();
