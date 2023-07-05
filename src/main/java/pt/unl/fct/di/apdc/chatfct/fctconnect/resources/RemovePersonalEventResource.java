@@ -4,6 +4,7 @@ import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
@@ -26,9 +27,26 @@ public class RemovePersonalEventResource {
     private static final String ID_PATH_PARAM = "id";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcachePersonalEvents = MemcacheUtils.getMemcache(MemcacheUtils.PERSONAL_EVENTS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RemovePersonalEventResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getPersonalEventCached(String id) {
+        final String key = String.format(MemcacheUtils.PERSONAL_EVENT_ENTITY_KEY, id);
+        return memcachePersonalEvents.get(key, Entity.class);
+    }
+
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @DELETE
@@ -50,18 +68,34 @@ public class RemovePersonalEventResource {
         Key personalEventKey = createPersonalEventKey(username, id);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity userOnDB = txn.get(userKey);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(userKey);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
-            final Entity personalEventOnDB = txn.get(personalEventKey);
-            final Response checkPersonalEventOnDB = checkPersonalEventOnDB(personalEventOnDB);
-            if (checkPersonalEventOnDB != null) {
-                txn.rollback();
-                return checkPersonalEventOnDB;
+            Entity personalEventOnDB;
+            final Entity personalEventCached = getPersonalEventCached(id);
+            final boolean isPersonalEventCached = isCached(personalEventCached);
+            if (isPersonalEventCached) {
+                personalEventOnDB = personalEventCached;
+            } else {
+                personalEventOnDB = txn.get(personalEventKey);
+                final Response checkPersonalEventOnDB = checkPersonalEventOnDB(personalEventOnDB);
+                if (checkPersonalEventOnDB != null) {
+                    txn.rollback();
+                    return checkPersonalEventOnDB;
+                }
             }
+            memcachePersonalEvents.delete(String.format(MemcacheUtils.PERSONAL_EVENT_ENTITY_KEY, id));
             txn.delete(personalEventKey);
             txn.commit();
             LOG.info("Event was removed - " + id);
