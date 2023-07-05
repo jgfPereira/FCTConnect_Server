@@ -3,10 +3,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.Timestamp;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeRegisterData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -25,9 +22,25 @@ public class RegisterBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RegisterBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -46,13 +59,22 @@ public class RegisterBackOfficeResource {
         Key key = backOfficeUserKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity backOfficeUserOnDB = txn.get(key);
-            final Response checkBackOfficeUserOnDB = checkUserOnDB(backOfficeUserOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(key);
+                final Response checkBackOfficeUserOnDB = checkUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
             }
             Entity backOfficeUser = createBackOfficeUser(data, key);
+            memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUser);
             txn.put(backOfficeUser);
             final String token = createToken(username, backOfficeUser);
             txn.commit();
@@ -91,19 +113,26 @@ public class RegisterBackOfficeResource {
     }
 
     private String extractUsername(String email) {
-        final String[] split = email.split(EMAIL_DELIMITER);
-        return split[0].trim();
+        return email.split(EMAIL_DELIMITER)[0].trim();
     }
 
     private boolean checkUsernameInRegularUsers(final String username) {
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity regularUserOnDB = txn.get(key);
-            final Response checkRegularUserOnDB = checkUserOnDB(regularUserOnDB);
-            if (checkRegularUserOnDB != null) {
-                txn.rollback();
-                return false;
+            Entity regularUserOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                regularUserOnDB = userCached;
+            } else {
+                regularUserOnDB = txn.get(key);
+                final Response checkRegularUserOnDB = checkUserOnDB(regularUserOnDB);
+                if (checkRegularUserOnDB != null) {
+                    memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), regularUserOnDB);
+                    txn.rollback();
+                    return false;
+                }
             }
             txn.commit();
             LOG.fine("Username is not taken by regular user");
