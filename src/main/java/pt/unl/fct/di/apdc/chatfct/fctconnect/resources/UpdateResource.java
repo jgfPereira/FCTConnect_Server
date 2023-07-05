@@ -278,11 +278,19 @@ public class UpdateResource {
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             final Blob photo = addPhotoToStorage(request, username);
             if (photo == null) {
@@ -291,6 +299,7 @@ public class UpdateResource {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
             }
             final Entity updatedUser = linkPhotoWithUser(userOnDB, photo.getName());
+            memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), updatedUser);
             txn.update(updatedUser);
             txn.commit();
             LOG.fine("Profile photo added - " + photo.getName());
