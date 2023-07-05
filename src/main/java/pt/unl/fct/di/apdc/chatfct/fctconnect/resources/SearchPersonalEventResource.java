@@ -26,9 +26,19 @@ public class SearchPersonalEventResource {
     private static final String EVENT_NAME_QUERY_PARAM = "name";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public SearchPersonalEventResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @GET
@@ -48,11 +58,19 @@ public class SearchPersonalEventResource {
         final Key userKey = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            final Entity userOnDB = txn.get(userKey);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(userKey);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             final Query<Entity> personalEventsQuery = getPersonalEventsQuery(userKey);
             final QueryResults<Entity> personalEvents = txn.run(personalEventsQuery);
