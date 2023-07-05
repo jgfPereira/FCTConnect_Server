@@ -27,6 +27,7 @@ public class SecretKeyResource {
 
     public static final String ENCRYPT_ALG = "AES/CBC/PKCS5Padding";
     public static final String KEY_TYPE = "AES";
+    private static final int SECRET_KEY_EXP_TIME_CACHE = 10;
     private static final int KEY_SIZE = 256;
     private static final String JWT_SIGNATURE_ALG = "HmacSHA512";
     private static final Logger LOG = Logger.getLogger(SecretKeyResource.class.getName());
@@ -42,8 +43,12 @@ public class SecretKeyResource {
         return memcacheSecretKeys.get(MemcacheUtils.SECRET_KEY_ENTITY_KEY, Entity.class);
     }
 
-    private boolean isCached(Entity e) {
-        return e != null;
+    private byte[] getSecretKeyTokensCached() {
+        return memcacheSecretKeys.get(MemcacheUtils.SECRET_KEY_TOKENS_KEY, byte[].class);
+    }
+
+    private boolean isCached(Object o) {
+        return o != null;
     }
 
     @POST
@@ -142,11 +147,19 @@ public class SecretKeyResource {
         Key key = secretKeyFactory.newKey(DatastoreTypes.SECRET_KEY_KEY);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity secretKeyOnDB = txn.get(key);
-            if (secretKeyOnDB == null) {
-                txn.rollback();
-                LOG.fine("Secret key does not exist");
-                return null;
+            Entity secretKeyOnDB;
+            final Entity secretKeyEntityCached = getSecretKeyEntityCached();
+            final boolean isSecretKeyEntityCached = isCached(secretKeyEntityCached);
+            if (isSecretKeyEntityCached) {
+                secretKeyOnDB = secretKeyEntityCached;
+            } else {
+                secretKeyOnDB = txn.get(key);
+                final Response doesSecretKeyExist = doesSecretKeyExist(secretKeyOnDB);
+                if (doesSecretKeyExist != null) {
+                    txn.rollback();
+                    return null;
+                }
+                memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB);
             }
             byte[][] secretKeyData = extractSecretKeyData(secretKeyOnDB);
             txn.commit();
@@ -163,6 +176,14 @@ public class SecretKeyResource {
         }
     }
 
+    private Response doesSecretKeyExist(Entity secretKey) {
+        if (secretKey == null) {
+            LOG.fine("Secret key does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - secret key does not exist")).build();
+        }
+        return null;
+    }
+
     public SecretKey decryptSecretKey() {
         byte[][] secretKeyData = getSecretKey();
         if (secretKeyData == null) {
@@ -173,10 +194,18 @@ public class SecretKeyResource {
         final byte[] aesKeyDecoded = secretKeyData[1];
         final byte[] initVectorDecoded = secretKeyData[2];
         try {
-            SecretKey aesKey = new SecretKeySpec(aesKeyDecoded, KEY_TYPE);
-            Cipher cipher = Cipher.getInstance(ENCRYPT_ALG);
-            cipher.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(initVectorDecoded));
-            byte[] decryptedSecretKey = cipher.doFinal(secretKeyEncrypted);
+            byte[] decryptedSecretKey;
+            final byte[] secretKeyTokensCached = getSecretKeyTokensCached();
+            final boolean isSecretKeyTokensCached = isCached(secretKeyTokensCached);
+            if (isSecretKeyTokensCached) {
+                decryptedSecretKey = secretKeyTokensCached;
+            } else {
+                SecretKey aesKey = new SecretKeySpec(aesKeyDecoded, KEY_TYPE);
+                Cipher cipher = Cipher.getInstance(ENCRYPT_ALG);
+                cipher.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(initVectorDecoded));
+                decryptedSecretKey = cipher.doFinal(secretKeyEncrypted);
+                memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_TOKENS_KEY, decryptedSecretKey, SECRET_KEY_EXP_TIME_CACHE);
+            }
             LOG.fine("Secret key was decrypted");
             return new SecretKeySpec(decryptedSecretKey, JWT_SIGNATURE_ALG);
         } catch (Exception ex) {

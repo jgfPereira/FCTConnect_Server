@@ -50,6 +50,12 @@ public final class MemcacheUtils {
                 MemcacheService.SetPolicy.SET_ALWAYS);
     }
 
+    public Boolean put(String key, Object value, int hours) {
+        return memcache.put(key, value,
+                Expiration.byDeltaSeconds((int) TimeUnit.HOURS.toSeconds(hours)),
+                MemcacheService.SetPolicy.SET_ALWAYS);
+    }
+
     public <T> T get(String key, Class<T> clazz) {
         final Object value = memcache.get(key);
         return clazz.isInstance(value) ? clazz.cast(value) : null;
