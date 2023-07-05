@@ -3,10 +3,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.BackOfficeRolePermissions;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DELETE;
@@ -30,9 +27,32 @@ public class RemoveBackOfficeResource {
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcacheSpecificUsers = MemcacheUtils.getMemcache(MemcacheUtils.SPECIFIC_USERS_NAMESPACE);
+    private final MemcacheUtils memcacheLoginRegs = MemcacheUtils.getMemcache(MemcacheUtils.LOGIN_REGISTRY_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RemoveBackOfficeResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getLoginRegCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_LOGIN_REG_KEY, username);
+        return memcacheLoginRegs.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @DELETE
@@ -55,12 +75,32 @@ public class RemoveBackOfficeResource {
         Key otherKey = userKeyFactory.newKey(otherUsername);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB = txn.get(usernameKey);
-            Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
-            if (checkUsersOnDB != null) {
-                txn.rollback();
-                return checkUsersOnDB;
+            Entity usernameOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                usernameOnDB = userCached;
+            } else {
+                usernameOnDB = txn.get(usernameKey);
+                final Response checkUserOnDB = checkUserOnDB(usernameOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), usernameOnDB);
+            }
+            Entity otherOnDB;
+            final Entity otherCached = getUserCached(otherUsername);
+            final boolean isOtherCached = isCached(otherCached);
+            if (isOtherCached) {
+                otherOnDB = otherCached;
+            } else {
+                otherOnDB = txn.get(otherKey);
+                final Response checkUserOnDB = checkUserOnDB(otherOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
             }
             final Response checkRemovePermissions = checkRemoveRegularUserPermissions(usernameRole, otherUsername);
             if (checkRemovePermissions != null) {
@@ -75,8 +115,17 @@ public class RemoveBackOfficeResource {
             final String otherRole = getOtherRole(otherOnDB);
             Key specificUserKey = getSpecificUserKey(otherUsername, otherRole);
             txn.delete(specificUserKey);
+            memcacheSpecificUsers.delete(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, otherUsername));
             Key loginRegistryKey = getLoginRegistryKey(otherUsername);
-            Entity loginRegistry = txn.get(loginRegistryKey);
+            Entity loginRegistry;
+            final Entity loginRegCached = getLoginRegCached(otherUsername);
+            final boolean isLoginRegCached = isCached(loginRegCached);
+            if (isLoginRegCached) {
+                loginRegistry = loginRegCached;
+                memcacheLoginRegs.delete(String.format(MemcacheUtils.USER_LOGIN_REG_KEY, otherUsername));
+            } else {
+                loginRegistry = txn.get(loginRegistryKey);
+            }
             final boolean isLoginRegistryOnDB = checkLoginRegistryOnDB(loginRegistry);
             if (isLoginRegistryOnDB) {
                 txn.delete(loginRegistryKey);
@@ -85,6 +134,7 @@ public class RemoveBackOfficeResource {
                 Key[] keysToRemove = removeLoginLogs(loginLogs);
                 txn.delete(keysToRemove);
             }
+            memcacheUsers.delete(String.format(MemcacheUtils.USER_ENTITY_KEY, otherUsername));
             txn.delete(otherKey);
             txn.commit();
             LOG.fine("Remove done: " + otherUsername);
@@ -109,10 +159,10 @@ public class RemoveBackOfficeResource {
         return null;
     }
 
-    private Response checkUsersOnDB(Entity usernameOnDB, Entity otherOnDB) {
-        if (usernameOnDB == null || otherOnDB == null) {
-            LOG.fine("At least one of the users dont exist");
-            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - At least one of the users dont exist")).build();
+    private Response checkUserOnDB(Entity user) {
+        if (user == null) {
+            LOG.fine("User does not exist");
+            return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - username is not recognized")).build();
         }
         return null;
     }
@@ -193,7 +243,7 @@ public class RemoveBackOfficeResource {
         try {
             Entity usernameOnDB = txn.get(usernameKey);
             Entity otherOnDB = txn.get(otherKey);
-            final Response checkUsersOnDB = checkUsersOnDB(usernameOnDB, otherOnDB);
+            final Response checkUsersOnDB = null; //checkUsersOnDB(usernameOnDB, otherOnDB);
             if (checkUsersOnDB != null) {
                 txn.rollback();
                 return checkUsersOnDB;
