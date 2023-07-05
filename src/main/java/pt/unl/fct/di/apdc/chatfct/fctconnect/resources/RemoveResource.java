@@ -4,6 +4,7 @@ import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
 import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenInfo;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
 
@@ -26,9 +27,26 @@ public class RemoveResource {
     private static final Logger LOG = Logger.getLogger(RemoveResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcacheSpecificUsers = MemcacheUtils.getMemcache(MemcacheUtils.SPECIFIC_USERS_NAMESPACE);
+    private final MemcacheUtils memcacheLoginRegs = MemcacheUtils.getMemcache(MemcacheUtils.LOGIN_REGISTRY_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RemoveResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getLoginRegCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_LOGIN_REG_KEY, username);
+        return memcacheLoginRegs.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @DELETE
@@ -45,16 +63,32 @@ public class RemoveResource {
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity user = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(user);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity user;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                user = userCached;
+            } else {
+                user = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(user);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
             }
             Key specificUserKey = getSpecificUserKey(username, role);
             txn.delete(specificUserKey);
+            memcacheSpecificUsers.delete(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username));
             Key loginRegistryKey = getLoginRegistryKey(username);
-            Entity loginRegistry = txn.get(loginRegistryKey);
+            Entity loginRegistry;
+            final Entity loginRegCached = getLoginRegCached(username);
+            final boolean isLoginRegCached = isCached(loginRegCached);
+            if (isLoginRegCached) {
+                loginRegistry = loginRegCached;
+                memcacheLoginRegs.delete(String.format(MemcacheUtils.USER_LOGIN_REG_KEY, username));
+            } else {
+                loginRegistry = txn.get(loginRegistryKey);
+            }
             final boolean isLoginRegistryOnDB = checkLoginRegistryOnDB(loginRegistry);
             if (isLoginRegistryOnDB) {
                 txn.delete(loginRegistryKey);
@@ -63,6 +97,7 @@ public class RemoveResource {
                 Key[] keysToRemove = removeLoginLogs(loginLogs);
                 txn.delete(keysToRemove);
             }
+            memcacheUsers.delete(String.format(MemcacheUtils.USER_ENTITY_KEY, username));
             txn.delete(key);
             txn.commit();
             LOG.fine("Remove done: " + username);
