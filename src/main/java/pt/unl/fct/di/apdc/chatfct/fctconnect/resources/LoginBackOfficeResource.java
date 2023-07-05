@@ -2,10 +2,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.LoginData;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.PasswordUtils;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.TokenUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -25,15 +22,25 @@ public class LoginBackOfficeResource {
     private static final Logger LOG = Logger.getLogger(LoginBackOfficeResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
     private final Gson gson = new Gson();
 
     public LoginBackOfficeResource() {
     }
 
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doLogin(LoginData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("Login attempt by back office user ");
+        LOG.fine("Login attempt by back office user");
         final Response checkData = checkData(data);
         if (checkData != null) {
             return checkData;
@@ -41,11 +48,19 @@ public class LoginBackOfficeResource {
         Key key = backOfficeUserKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(userOnDB);
-            if (checkBackOfficeUserOnDB != null) {
-                txn.rollback();
-                return checkBackOfficeUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getBackOfficeUserCached(data.username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkBackOfficeUserOnDB = checkBackOfficeUserOnDB(userOnDB);
+                if (checkBackOfficeUserOnDB != null) {
+                    txn.rollback();
+                    return checkBackOfficeUserOnDB;
+                }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, data.username), userOnDB);
             }
             final boolean checkPassword = checkPassword(data.password, userOnDB);
             if (checkPassword) {
