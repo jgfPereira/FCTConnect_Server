@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -31,9 +32,18 @@ public class SecretKeyResource {
     private static final Logger LOG = Logger.getLogger(SecretKeyResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory secretKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.SECRET_KEY_TYPE);
+    private final MemcacheUtils memcacheSecretKeys = MemcacheUtils.getMemcache(MemcacheUtils.SECRET_KEYS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public SecretKeyResource() {
+    }
+
+    private Entity getSecretKeyEntityCached() {
+        return memcacheSecretKeys.get(MemcacheUtils.SECRET_KEY_ENTITY_KEY, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -46,13 +56,22 @@ public class SecretKeyResource {
         Key key = secretKeyFactory.newKey(DatastoreTypes.SECRET_KEY_KEY);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity secretKeyOnDB = txn.get(key);
-            Response checkSecretKeyOnDB = checkSecretKeyOnDB(secretKeyOnDB);
-            if (checkSecretKeyOnDB != null) {
-                txn.rollback();
-                return checkSecretKeyOnDB;
+            Entity secretKeyOnDB;
+            final Entity secretKeyEntityCached = getSecretKeyEntityCached();
+            final boolean isSecretKeyEntityCached = isCached(secretKeyEntityCached);
+            if (isSecretKeyEntityCached) {
+                secretKeyOnDB = secretKeyEntityCached;
+            } else {
+                secretKeyOnDB = txn.get(key);
+                final Response checkSecretKeyOnDB = checkSecretKeyOnDB(secretKeyOnDB);
+                if (checkSecretKeyOnDB != null) {
+                    memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyOnDB);
+                    txn.rollback();
+                    return checkSecretKeyOnDB;
+                }
             }
-            Entity secretKeyEntity = createSecretKey(secretKeyData, key);
+            final Entity secretKeyEntity = createSecretKey(secretKeyData, key);
+            memcacheSecretKeys.put(MemcacheUtils.SECRET_KEY_ENTITY_KEY, secretKeyEntity);
             txn.put(secretKeyEntity);
             txn.commit();
             LOG.fine("Secret key was created");
