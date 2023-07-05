@@ -18,7 +18,6 @@ public final class FuzzySearcher {
 
     private static final int QUERY_SEARCH_LIMIT = 10;
     private final Directory memIndex = new ByteBuffersDirectory();
-    private final Document document = new Document();
     private final IndexWriter indexWriter;
 
     private FuzzySearcher() {
