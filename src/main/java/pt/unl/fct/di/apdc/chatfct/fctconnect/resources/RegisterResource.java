@@ -22,10 +22,28 @@ public class RegisterResource {
     private static final Logger LOG = Logger.getLogger(RegisterResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final KeyFactory backOfficeUserKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.BACK_OFFICE_USER_TYPE);
     private final KeyFactory accountConfirmationFactory = datastore.newKeyFactory().setKind(DatastoreTypes.ACCOUNT_CONFIRMATION_TYPE);
+    private final MemcacheUtils memcacheBackOfficeUsers = MemcacheUtils.getMemcache(MemcacheUtils.BACK_OFFICE_USER_NAMESPACE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcacheSpecificUsers = MemcacheUtils.getMemcache(MemcacheUtils.SPECIFIC_USERS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public RegisterResource() {
+    }
+
+    private Entity getBackOfficeUserCached(String username) {
+        final String key = String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username);
+        return memcacheBackOfficeUsers.get(key, Entity.class);
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @POST
@@ -37,18 +55,32 @@ public class RegisterResource {
             return checkMandatoryData;
         }
         final String username = extractUsername(data.email);
+        final boolean checkUsernameInBackOfficeUsers = checkUsernameInBackOfficeUsers(username);
+        if (!checkUsernameInBackOfficeUsers) {
+            return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - username is already taken")).build();
+        }
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
             }
             Entity user = createUser(data, key);
+            memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), user);
             txn.put(user);
             Entity specificUser = createSpecificUser(username, data.role);
+            memcacheSpecificUsers.put(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username), specificUser);
             txn.put(specificUser);
             final Response createAccountConfirmation = createAccountConfirmation(txn, username, data.email);
             if (createAccountConfirmation != null) {
@@ -88,6 +120,39 @@ public class RegisterResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - unrecognized role")).build();
         }
         return null;
+    }
+
+    private boolean checkUsernameInBackOfficeUsers(final String username) {
+        final Key key = backOfficeUserKeyFactory.newKey(username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity backOfficeUserOnDB;
+            final Entity userCached = getBackOfficeUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                backOfficeUserOnDB = userCached;
+            } else {
+                backOfficeUserOnDB = txn.get(key);
+                final Response checkRegularUserOnDB = checkUserOnDB(backOfficeUserOnDB);
+                if (checkRegularUserOnDB != null) {
+                    memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
+                    txn.rollback();
+                    return false;
+                }
+            }
+            txn.commit();
+            LOG.fine("Username is not taken by back office user");
+            return true;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return false;
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return false;
+            }
+        }
     }
 
     private String extractUsername(String email) {
