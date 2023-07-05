@@ -32,9 +32,25 @@ public class UpdateResource {
     private static final String SEPARATOR = " ";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
+    private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
+    private final MemcacheUtils memcacheSpecificUsers = MemcacheUtils.getMemcache(MemcacheUtils.SPECIFIC_USERS_NAMESPACE);
     private final Gson gson = new Gson();
 
     public UpdateResource() {
+    }
+
+    private Entity getUserCached(String username) {
+        final String key = String.format(MemcacheUtils.USER_ENTITY_KEY, username);
+        return memcacheUsers.get(key, Entity.class);
+    }
+
+    private Entity getSpecificUserCached(String username) {
+        final String key = String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username);
+        return memcacheSpecificUsers.get(key, Entity.class);
+    }
+
+    private boolean isCached(Entity e) {
+        return e != null;
     }
 
     @PUT
@@ -58,20 +74,39 @@ public class UpdateResource {
         Key key = userKeyFactory.newKey(username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity userOnDB = txn.get(key);
-            final Response checkUserOnDB = checkUserOnDB(userOnDB);
-            if (checkUserOnDB != null) {
-                txn.rollback();
-                return checkUserOnDB;
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(key);
+                final Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
             }
             final List<String> forbiddenUpdates = new ArrayList<>();
             final List<String> invalidFormatUpdates = new ArrayList<>();
             final Key specificUserKey = getSpecificUserKey(username, role);
-            final Entity.Builder specificUserEntityBuilder = Entity.newBuilder(txn.get(specificUserKey));
+            Entity specificUser;
+            final Entity specificUserCached = getSpecificUserCached(username);
+            final boolean isSpecificUserCached = isCached(specificUserCached);
+            if (isSpecificUserCached) {
+                specificUser = specificUserCached;
+            } else {
+                specificUser = txn.get(specificUserKey);
+                memcacheSpecificUsers.put(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username), specificUser);
+            }
+            final Entity.Builder specificUserEntityBuilder = Entity.newBuilder(specificUser);
             final Entity updatedUser = updateUser(userOnDB, specificUserEntityBuilder, data, role, forbiddenUpdates, invalidFormatUpdates);
             final Entity updatedSpecificUser = specificUserEntityBuilder.build();
             if (didUserChanged(forbiddenUpdates, invalidFormatUpdates, data.updateEntries)) {
                 txn.update(updatedUser, updatedSpecificUser);
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), updatedUser);
+                memcacheSpecificUsers.put(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username), updatedSpecificUser);
             }
             txn.commit();
             LOG.fine("User was updated - if permissions and format checked out");
