@@ -8,11 +8,9 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public final class JsoupUtils {
 
-    private static final Logger LOG = Logger.getLogger(JsoupUtils.class.getName());
     private static final String BASE_URL = "https://www.fct.unl.pt";
     private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
@@ -27,8 +25,9 @@ public final class JsoupUtils {
     private static final String NEWS_DESCRIPTION_CLASS = "div.views-field-field-resumo-value";
     private static final String PARAGRAPH_TAG = "p";
     private static final String NEWS_DATE_CLASS = "div.views-field-created";
+    private static final String PARAGRAPH_OR_DIV = "p, div";
     private static final int DEFAULT_NUM_OF_NEWS = 12;
-    private static final int NUM_OF_NEWS_LAST_PAGE = 6;
+    private static final int NUM_OF_NEWS_LAST_PAGE = 7;
     private static final int LAST_PAGE = 19;
     private final Document doc;
     private final int page;
@@ -45,9 +44,13 @@ public final class JsoupUtils {
     }
 
     public static List<NewsData> scrape(int page) {
-        final JsoupUtils jsoup = new JsoupUtils(page);
-        final Element newsContainer = jsoup.getNewsContainer();
-        return jsoup.parseAllNews(newsContainer);
+        try {
+            final JsoupUtils jsoup = new JsoupUtils(page);
+            final Element newsContainer = jsoup.getNewsContainer();
+            return jsoup.parseAllNews(newsContainer);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private int computeNumOfNewsPerPage(int page) {
@@ -55,12 +58,8 @@ public final class JsoupUtils {
     }
 
     private Element getNewsContainer() {
-        try {
-            final Elements newsContainer = doc.select(NEWS_CONTAINER_CLASS);
-            return newsContainer.get(0);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        final Elements newsContainer = doc.select(NEWS_CONTAINER_CLASS);
+        return newsContainer.get(0);
     }
 
     private Element getNews(Element newsContainer, int newsNum) {
@@ -75,7 +74,7 @@ public final class JsoupUtils {
         final String newsTitle = newsBody.text();
         final Element newsImage = singleNews.select(NEWS_IMAGE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(LINK_TAG).get(0);
         final String newsImageLink = newsImage.select(IMAGE_TAG).get(0).attr(SRC_ATTR);
-        final Element newsDescriptionElement = singleNews.select(NEWS_DESCRIPTION_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(PARAGRAPH_TAG).get(0);
+        final Element newsDescriptionElement = singleNews.select(NEWS_DESCRIPTION_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(PARAGRAPH_OR_DIV).get(0);
         final String newsDescription = newsDescriptionElement.text();
         final Element newsDateElement = singleNews.select(NEWS_DATE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0);
         final String newsDate = newsDateElement.text();
