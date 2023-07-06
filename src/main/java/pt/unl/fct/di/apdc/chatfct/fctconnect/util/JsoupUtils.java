@@ -8,11 +8,9 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public final class JsoupUtils {
-
-    private static final Logger LOG = Logger.getLogger(JsoupUtils.class.getName());
+    
     private static final String BASE_URL = "https://www.fct.unl.pt";
     private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
@@ -56,7 +54,7 @@ public final class JsoupUtils {
         final Element newsContainer = jsoup.getNewsContainer();
         return jsoup.parseAllNews(newsContainer);
     }
-    
+
     private int computeNumOfNewsPerPage(int page) {
         return page == LAST_PAGE ? NUM_OF_NEWS_LAST_PAGE : DEFAULT_NUM_OF_NEWS;
     }
