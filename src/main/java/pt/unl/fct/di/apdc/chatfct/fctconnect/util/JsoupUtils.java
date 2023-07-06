@@ -6,6 +6,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public final class JsoupUtils {
@@ -42,10 +44,10 @@ public final class JsoupUtils {
         }
     }
 
-    public static NewsData scrape(int page) {
-        JsoupUtils jsoup = new JsoupUtils(page);
-        Element newsContainer = jsoup.getNewsContainer();
-        return jsoup.parseNews(jsoup.getNews(newsContainer, 1));
+    public static List<NewsData> scrape(int page) {
+        final JsoupUtils jsoup = new JsoupUtils(page);
+        final Element newsContainer = jsoup.getNewsContainer();
+        return jsoup.parseAllNews(newsContainer);
     }
 
     private int computeNumOfNewsPerPage(int page) {
@@ -78,5 +80,13 @@ public final class JsoupUtils {
         final Element newsDateElement = singleNews.select(NEWS_DATE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0);
         final String newsDate = newsDateElement.text();
         return new NewsData(newsTitle, newsLink, newsImageLink, newsDescription, newsDate);
+    }
+
+    private List<NewsData> parseAllNews(Element newsContainer) {
+        final List<NewsData> allNews = new ArrayList<>();
+        for (int i = 1; i <= numOfNewsPerPage; i++) {
+            allNews.add(parseNews(getNews(newsContainer, i)));
+        }
+        return allNews;
     }
 }
