@@ -23,18 +23,24 @@ public final class JsoupUtils {
     private static final String IMAGE_TAG = "img";
     private static final String SRC_ATTR = "src";
     private static final String NEWS_DESCRIPTION_CLASS = "div.views-field-field-resumo-value";
-    private static final String PARAGRAPH_TAG = "p";
     private static final String NEWS_DATE_CLASS = "div.views-field-created";
     private static final String PARAGRAPH_OR_DIV = "p, div";
+    private static final String LAST_PAGE_CLASS = "li.pager-last.last";
+    private static final String PAGE_OF_LINK_SPLIT_REGEX = "=";
     private static final int DEFAULT_NUM_OF_NEWS = 12;
     private static final int NUM_OF_NEWS_LAST_PAGE = 7;
     private static final int LAST_PAGE = 19;
     private final Document doc;
     private final int page;
+    private final int numOfPages;
     private final int numOfNewsPerPage;
 
     private JsoupUtils(int page) {
         try {
+            numOfPages = computeNumOfPages();
+            if (page < 0 || page >= numOfPages) {
+                throw new IllegalArgumentException("Invalid page number");
+            }
             this.page = page;
             numOfNewsPerPage = computeNumOfNewsPerPage(page);
             doc = Jsoup.connect(String.format(NEWS_BASE_URL, page)).get();
@@ -51,6 +57,11 @@ public final class JsoupUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private int computeNumOfPages() {
+        final String linkLastPage = doc.select(LAST_PAGE_CLASS).get(0).select(LINK_TAG).get(0).attr(HREF_ATTR);
+        return Integer.parseInt(linkLastPage.split(PAGE_OF_LINK_SPLIT_REGEX)[1]) + 1;
     }
 
     private int computeNumOfNewsPerPage(int page) {
