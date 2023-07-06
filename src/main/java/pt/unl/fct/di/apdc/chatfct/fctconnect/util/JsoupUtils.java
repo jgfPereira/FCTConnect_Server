@@ -8,9 +8,11 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class JsoupUtils {
 
+    private static final Logger LOG = Logger.getLogger(JsoupUtils.class.getName());
     private static final String BASE_URL = "https://www.fct.unl.pt";
     private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
@@ -30,40 +32,31 @@ public final class JsoupUtils {
     private static final int DEFAULT_NUM_OF_NEWS = 12;
     private static final int NUM_OF_NEWS_LAST_PAGE = 7;
     private static final int LAST_PAGE = 19;
+    private static final int FIRST_PAGE = 0;
     private final Document doc;
-    private final int page;
-    private final int numOfPages;
     private final int numOfNewsPerPage;
 
-    private JsoupUtils(int page) {
-        try {
-            numOfPages = computeNumOfPages();
-            if (page < 0 || page >= numOfPages) {
-                throw new IllegalArgumentException("Invalid page number");
-            }
-            this.page = page;
-            numOfNewsPerPage = computeNumOfNewsPerPage(page);
-            doc = Jsoup.connect(String.format(NEWS_BASE_URL, page)).get();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private JsoupUtils(int page) throws IOException {
+        final int numOfPages = computeNumOfPages();
+        if (page < 0 || page >= numOfPages) {
+            throw new IllegalArgumentException("Invalid page number ----> NUM OF PAGES " + numOfPages);
         }
+        numOfNewsPerPage = computeNumOfNewsPerPage(page);
+        doc = Jsoup.connect(String.format(NEWS_BASE_URL, page)).get();
     }
 
-    public static List<NewsData> scrape(int page) {
-        try {
-            final JsoupUtils jsoup = new JsoupUtils(page);
-            final Element newsContainer = jsoup.getNewsContainer();
-            return jsoup.parseAllNews(newsContainer);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private int computeNumOfPages() {
-        final String linkLastPage = doc.select(LAST_PAGE_CLASS).get(0).select(LINK_TAG).get(0).attr(HREF_ATTR);
+    private static int computeNumOfPages() throws IOException {
+        final Document document = Jsoup.connect(String.format(NEWS_BASE_URL, FIRST_PAGE)).get();
+        final String linkLastPage = document.select(LAST_PAGE_CLASS).get(0).select(LINK_TAG).get(0).attr(HREF_ATTR);
         return Integer.parseInt(linkLastPage.split(PAGE_OF_LINK_SPLIT_REGEX)[1]) + 1;
     }
 
+    public static List<NewsData> scrape(int page) throws IOException {
+        final JsoupUtils jsoup = new JsoupUtils(page);
+        final Element newsContainer = jsoup.getNewsContainer();
+        return jsoup.parseAllNews(newsContainer);
+    }
+    
     private int computeNumOfNewsPerPage(int page) {
         return page == LAST_PAGE ? NUM_OF_NEWS_LAST_PAGE : DEFAULT_NUM_OF_NEWS;
     }

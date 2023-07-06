@@ -23,6 +23,10 @@ public class TestScrapingResource {
     @GET
     @Path("/{page}")
     public Response doAddFriend(@PathParam(PAGE_PATH_PARAM) String page) {
-        return Response.ok(gson.toJson(JsoupUtils.scrape(Integer.parseInt(page)))).build();
+        try {
+            return Response.ok(gson.toJson(JsoupUtils.scrape(Integer.parseInt(page)))).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson(e.getMessage())).build();
+        }
     }
 }
