@@ -21,8 +21,17 @@ public class TestScrapingResource {
     }
 
     @GET
+    public Response doScrapeAllNews() {
+        try {
+            return Response.ok(gson.toJson(JsoupUtils.scrape())).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson(e.getMessage())).build();
+        }
+    }
+
+    @GET
     @Path("/{page}")
-    public Response doAddFriend(@PathParam(PAGE_PATH_PARAM) String page) {
+    public Response doScrapNewsOfPage(@PathParam(PAGE_PATH_PARAM) String page) {
         try {
             return Response.ok(gson.toJson(JsoupUtils.scrape(Integer.parseInt(page)))).build();
         } catch (Exception e) {

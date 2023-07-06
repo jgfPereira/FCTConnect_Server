@@ -55,6 +55,15 @@ public final class JsoupUtils {
         return jsoup.parseAllNews(newsContainer);
     }
 
+    public static List<NewsData> scrape() throws IOException {
+        final List<NewsData> allNewsOfAllPages = new ArrayList<>();
+        final int numOfPages = computeNumOfPages();
+        for (int i = 0; i < numOfPages; i++) {
+            allNewsOfAllPages.addAll(scrape(i));
+        }
+        return allNewsOfAllPages;
+    }
+
     private int computeNumOfNewsForPage() {
         return doc.select(NUM_OF_NEWS_FOR_PAGE_CLASS).size();
     }
