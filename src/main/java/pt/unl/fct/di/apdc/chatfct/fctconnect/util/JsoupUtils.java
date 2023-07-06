@@ -2,6 +2,7 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
@@ -10,28 +11,72 @@ import java.util.logging.Logger;
 public final class JsoupUtils {
 
     private static final Logger LOG = Logger.getLogger(JsoupUtils.class.getName());
-    private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias";
+    private static final String BASE_URL = "https://www.fct.unl.pt";
+    private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
+    private static final String SINGLE_NEWS_CONTAINER_CLASS = "div.views-row.views-row-%d";
+    private static final String NEWS_BODY_CLASS = "div.views-field-title";
+    private static final String NEWS_SPAN_CLASS = "span.field-content";
+    private static final String LINK_TAG = "a";
+    private static final String HREF_ATTR = "href";
+    private static final String NEWS_IMAGE_CLASS = "div.noticia-imagem";
+    private static final String IMAGE_TAG = "img";
+    private static final String SRC_ATTR = "src";
+    private static final String NEWS_DESCRIPTION_CLASS = "div.views-field-field-resumo-value";
+    private static final String PARAGRAPH_TAG = "p";
+    private static final String NEWS_DATE_CLASS = "div.views-field-created";
+    private static final int DEFAULT_NUM_OF_NEWS = 12;
+    private static final int NUM_OF_NEWS_LAST_PAGE = 6;
+    private static final int LAST_PAGE = 19;
     private final Document doc;
+    private final int page;
+    private final int numOfNewsPerPage;
 
-    private JsoupUtils() {
+    private JsoupUtils(int page) {
         try {
-            doc = Jsoup.connect(NEWS_BASE_URL).get();
+            this.page = page;
+            numOfNewsPerPage = computeNumOfNewsPerPage(page);
+            doc = Jsoup.connect(String.format(NEWS_BASE_URL, page)).get();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static String scrape() {
-        return new JsoupUtils().getNewsContainer();
+    public static NewsData scrape(int page) {
+        JsoupUtils jsoup = new JsoupUtils(page);
+        Element newsContainer = jsoup.getNewsContainer();
+        return jsoup.parseNews(jsoup.getNews(newsContainer, 1));
     }
 
-    private String getNewsContainer() {
+    private int computeNumOfNewsPerPage(int page) {
+        return page == LAST_PAGE ? NUM_OF_NEWS_LAST_PAGE : DEFAULT_NUM_OF_NEWS;
+    }
+
+    private Element getNewsContainer() {
         try {
             final Elements newsContainer = doc.select(NEWS_CONTAINER_CLASS);
-            return newsContainer.get(0).html();
+            return newsContainer.get(0);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Element getNews(Element newsContainer, int newsNum) {
+        final Elements singleNewsContainer = newsContainer.select(String.format(SINGLE_NEWS_CONTAINER_CLASS, newsNum));
+        assert singleNewsContainer.size() == 1;
+        return singleNewsContainer.get(0);
+    }
+
+    private NewsData parseNews(Element singleNews) {
+        final Element newsBody = singleNews.select(NEWS_BODY_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(LINK_TAG).get(0);
+        final String newsLink = BASE_URL + newsBody.attr(HREF_ATTR);
+        final String newsTitle = newsBody.text();
+        final Element newsImage = singleNews.select(NEWS_IMAGE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(LINK_TAG).get(0);
+        final String newsImageLink = newsImage.select(IMAGE_TAG).get(0).attr(SRC_ATTR);
+        final Element newsDescriptionElement = singleNews.select(NEWS_DESCRIPTION_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(PARAGRAPH_TAG).get(0);
+        final String newsDescription = newsDescriptionElement.text();
+        final Element newsDateElement = singleNews.select(NEWS_DATE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0);
+        final String newsDate = newsDateElement.text();
+        return new NewsData(newsTitle, newsLink, newsImageLink, newsDescription, newsDate);
     }
 }
