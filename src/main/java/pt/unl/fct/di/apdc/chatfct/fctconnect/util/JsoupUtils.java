@@ -8,11 +8,9 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public final class JsoupUtils {
 
-    private static final Logger LOG = Logger.getLogger(JsoupUtils.class.getName());
     private static final String BASE_URL = "https://www.fct.unl.pt";
     private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
@@ -30,23 +28,19 @@ public final class JsoupUtils {
     private static final String LAST_PAGE_CLASS = "li.pager-last.last";
     private static final String PAGE_OF_LINK_SPLIT_REGEX = "=";
     private static final String NUM_OF_NEWS_FOR_PAGE_CLASS = "div.noticia-imagem";
-    private static final int DEFAULT_NUM_OF_NEWS = 12;
-    private static final int NUM_OF_NEWS_LAST_PAGE = 7;
-    private static final int LAST_PAGE = 19;
     private static final int FIRST_PAGE = 0;
     private final Document doc;
     private final int page;
-    private final int numOfNewsPerPage;
+    private final int numOfNewsForPage;
 
     private JsoupUtils(int page) throws IOException {
         final int numOfPages = computeNumOfPages();
         if (page < 0 || page >= numOfPages) {
-            throw new IllegalArgumentException("Invalid page number ----> NUM OF PAGES " + numOfPages);
+            throw new IllegalArgumentException("Invalid page number");
         }
         this.page = page;
-        numOfNewsPerPage = computeNumOfNewsPerPage();
         doc = Jsoup.connect(String.format(NEWS_BASE_URL, page)).get();
-        computeNumOfNewsForPage();
+        numOfNewsForPage = computeNumOfNewsForPage();
     }
 
     private static int computeNumOfPages() throws IOException {
@@ -62,13 +56,7 @@ public final class JsoupUtils {
     }
 
     private int computeNumOfNewsForPage() {
-        int s = doc.select(NUM_OF_NEWS_FOR_PAGE_CLASS).size();
-        LOG.severe("NUM OF NEWS ON PAGE <" + page + "> is of " + s);
-        return s;
-    }
-
-    private int computeNumOfNewsPerPage() {
-        return page == LAST_PAGE ? NUM_OF_NEWS_LAST_PAGE : DEFAULT_NUM_OF_NEWS;
+        return doc.select(NUM_OF_NEWS_FOR_PAGE_CLASS).size();
     }
 
     private Element getNewsContainer() {
@@ -97,9 +85,18 @@ public final class JsoupUtils {
 
     private List<NewsData> parseAllNews(Element newsContainer) {
         final List<NewsData> allNews = new ArrayList<>();
-        for (int i = 1; i <= numOfNewsPerPage; i++) {
+        for (int i = 1; i <= numOfNewsForPage; i++) {
             allNews.add(parseNews(getNews(newsContainer, i)));
         }
         return allNews;
+    }
+
+    @Override
+    public String toString() {
+        return "JsoupUtils{" +
+                "doc=" + doc +
+                ", page=" + page +
+                ", numOfNewsForPage=" + numOfNewsForPage +
+                '}';
     }
 }
