@@ -3,7 +3,6 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.util;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,8 +10,8 @@ import java.util.List;
 
 public final class JsoupUtils {
 
-    private static final String BASE_URL = "https://www.fct.unl.pt";
-    private static final String NEWS_BASE_URL = "https://www.fct.unl.pt/noticias?page=%d";
+    private static final String FCT_BASE_URL = "https://www.fct.unl.pt";
+    private static final String NEWS_BASE_URL = FCT_BASE_URL + "/noticias?page=%d";
     private static final String NEWS_CONTAINER_CLASS = "div.view.view-noticias.view-id-noticias.view-display-id-page_1.view-dom-id-1";
     private static final String SINGLE_NEWS_CONTAINER_CLASS = "div.views-row.views-row-%d";
     private static final String NEWS_BODY_CLASS = "div.views-field-title";
@@ -69,19 +68,16 @@ public final class JsoupUtils {
     }
 
     private Element getNewsContainer() {
-        final Elements newsContainer = doc.select(NEWS_CONTAINER_CLASS);
-        return newsContainer.get(0);
+        return doc.select(NEWS_CONTAINER_CLASS).get(0);
     }
 
-    private Element getNews(Element newsContainer, int newsNum) {
-        final Elements singleNewsContainer = newsContainer.select(String.format(SINGLE_NEWS_CONTAINER_CLASS, newsNum));
-        assert singleNewsContainer.size() == 1;
-        return singleNewsContainer.get(0);
+    private Element getSingleNews(Element newsContainer, int newsNum) {
+        return newsContainer.select(String.format(SINGLE_NEWS_CONTAINER_CLASS, newsNum)).get(0);
     }
 
-    private NewsData parseNews(Element singleNews) {
+    private NewsData parseSingleNews(Element singleNews) {
         final Element newsBody = singleNews.select(NEWS_BODY_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(LINK_TAG).get(0);
-        final String newsLink = BASE_URL + newsBody.attr(HREF_ATTR);
+        final String newsLink = FCT_BASE_URL + newsBody.attr(HREF_ATTR);
         final String newsTitle = newsBody.text();
         final Element newsImage = singleNews.select(NEWS_IMAGE_CLASS).get(0).select(NEWS_SPAN_CLASS).get(0).select(LINK_TAG).get(0);
         final String newsImageLink = newsImage.select(IMAGE_TAG).get(0).attr(SRC_ATTR);
@@ -95,7 +91,7 @@ public final class JsoupUtils {
     private List<NewsData> parseAllNews(Element newsContainer) {
         final List<NewsData> allNews = new ArrayList<>();
         for (int i = 1; i <= numOfNewsForPage; i++) {
-            allNews.add(parseNews(getNews(newsContainer, i)));
+            allNews.add(parseSingleNews(getSingleNews(newsContainer, i)));
         }
         return allNews;
     }
