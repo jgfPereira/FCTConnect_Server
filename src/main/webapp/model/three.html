@@ -1,148 +1,177 @@
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <link href="./styles/main.css" rel="stylesheet" type="text/css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-  </head>
-  <body>
-    <!--<div id="loading-video" class="video-container">
+
+<head>
+  <meta charset="UTF-8" />
+  <link href="./styles/main.css" rel="stylesheet" type="text/css" />
+  <link href="./styles/menu.css" rel="stylesheet" type="text/css" />
+  <link href="./styles/inventory.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="styles/touch-pad.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+</head>
+
+<body>
+  <!--<div id="loading-video" class="video-container">
       <video  autoplay muted loop>
         <source src="0001-0350.mp4" type="video/mp4" />
       </video>
     </div>-->
-    <title>AddcProject</title>
-    <div id="pop-up-buttons">
-      <button id="menu-button">Menu</button>
-      <button id="inventory-button">Inventory</button>
-      <button id="location-button">Location</button>
-      <button id="caracther-button">Characther</button>
-      <button id="events-button">Events</button>
-      <button id="myButton">Click Me</button>
+  <title>AddcProject</title>
+  <div class="menu-box">
+    <div class="menu">
+      <ul>
+        <li>
+          <div id="inventory">
+            <a style="--clr: rgb(56,56,246);" href="#">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="40" width="40">
+                <rect width="256" height="256" fill="none"></rect>
+                <path d="M96,48h64a48,48,0,0,1,48,48V216a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V96A48,48,0,0,1,96,48Z"
+                  fill="#b86b00" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"
+                  id="mainIconPathAttribute"></path>
+                <path d="M80,224V152a16,16,0,0,1,16-16h64a16,16,0,0,1,16,16v72" fill="#b86b00" stroke="#000"
+                  stroke-linecap="round" stroke-linejoin="round" stroke-width="8" id="mainIconPathAttribute"></path>
+                <path d="M96,48V32a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V48" fill="#b86b00" stroke="#000"
+                  stroke-linecap="round" stroke-linejoin="round" stroke-width="8" id="mainIconPathAttribute"></path>
+                <line x1="112" y1="88" x2="144" y2="88" fill="none" stroke="#000" stroke-linecap="round"
+                  stroke-linejoin="round" stroke-width="8"></line>
+                <line x1="80" y1="168" x2="176" y2="168" fill="none" stroke="#000" stroke-linecap="round"
+                  stroke-linejoin="round" stroke-width="8"></line>
+                <line x1="144" y1="168" x2="144" y2="184" fill="none" stroke="#000" stroke-linecap="round"
+                  stroke-linejoin="round" stroke-width="8"></line>
+              </svg>
+              <span class="text">Inventory</span>
+            </a>
+          </div>
+        </li>
+        <li>
+          <div id="location">
+            <a style="--clr: rgb(56,56,246);" href="#">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-pin-fill"
+                viewBox="0 0 16 16" id="IconChangeColor">
+                <path
+                  d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5c0 .276-.224 1.5-.5 1.5s-.5-1.224-.5-1.5V10h-4a.5.5 0 0 1-.5-.5c0-.973.64-1.725 1.17-2.189A5.921 5.921 0 0 1 5 6.708V2.277a2.77 2.77 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"
+                  id="mainIconPathAttribute" fill="#ff0000"></path>
+              </svg>
+              <span class="text">Location</span>
+            </a>
+          </div>
+        </li>
+        <li>
+          <div id="character">
+            <a style="--clr: rgb(56,56,246);" href="#">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person"
+                viewBox="0 0 16 16" id="IconChangeColor">
+                <path
+                  d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"
+                  id="mainIconPathAttribute"></path>
+              </svg>
+              <span class="text">Character</span>
+            </a>
+          </div>
+        </li>
+        <li>
+          <div id="events">
+            <a style="--clr: rgb(56,56,246);" href="#">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor"
+                class="bi bi-calendar-check" viewBox="0 0 16 16" id="IconChangeColor">
+                <path
+                  d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z"
+                  id="mainIconPathAttribute" fill="#000000"></path>
+                <path
+                  d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"
+                  id="mainIconPathAttribute" fill="#000000"></path>
+              </svg>
+              <span class="text">Events</span>
+            </a>
+          </div>
+        </li>
+        <li>
+          <a style="--clr: rgb(56,56,246);" href="#">
+            <span class="icon bi-peace"></span>
+            <span class="text">Click me</span>
+          </a>
+        </li>
+      </ul>
     </div>
-    <div id="info">
-      <div class="popup" id="single-event-popup">
-        <div id="eventInfo">
-        </div>
-        <a class="close-popup" data-popup="event-popup" href="#">Close</a>
+    <div class="menu-viewer">
+      <label class="menu-button" for="menu-button">
+        <input type="checkbox" id="menu-button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </label>
+    </div>
+  </div>
+  <div id="info">
+    <div class="popup" id="single-event-popup">
+      <div id="eventInfo">
       </div>
-      <div class="popup" id="event-popup">
-        <h1>Events</h1>
-        <h3>On going events:</h3>
+      <a class="close-popup" data-popup="single-event-popup" href="#">Close</a>
+    </div>
+    <div class="popup" id="event-popup">
+      <h1>Events</h1>
+      <h3>On going events:</h3>
+      <ul>
+        <li><a href="#">Option 1</a></li>
+      </ul>
+      <a class="close-popup" data-popup="event-popup" href="#">Close</a>
+    </div>
+    <div class="inventory" id="inventory-popup">
+      <h2>Inventory</h2>
+      <ul>
         <ul>
-          <li><a href="#">Option 1</a></li>
+          <li>
+            <img src="book.jpg" alt="Item 1">
+            <span>Item 1</span>
+          </li>
+          <li>
+            <img src="book.jpg" alt="Item 2">
+            <span>Item 2</span>
+          </li>
+          <li>
+            <img src="book.jpg" alt="Item 3">
+            <span>Item 3</span>
+          </li>
+          <li>
+            <img src="book.jpg" alt="Item 3">
+            <span>Item 3</span>
+          </li>
+          <li>
+            <img src="book.jpg" alt="Item 3">
+            <span>Item 3</span>
+          </li>
+          <li>
+            <img src="book.jpg" alt="Item 3">
+            <span>Item 3</span>
+          </li>
+          <!-- Add more li elements for additional items -->
         </ul>
-        <a class="close-popup" data-popup="event-popup" href="#">Close</a>
-      </div>
-      <div class="popup" id="menu-popup">
-        <h2>Menu</h2>
-        <ul>
-          <li><a href="#">Option 1</a></li>
-          <li><a href="#">Option 2</a></li>
-          <li><a href="#">Option 3</a></li>
-        </ul>
-        <a class="close-popup" data-popup="menu-popup" href="#">Close</a>
-      </div>
-      <div class="popup" id="inventory-popup">
-        <h2>Inventory</h2>
-        <ul>
-          <li>Item 1</li>
-          <li>Item 2</li>
-          <li>Item 3</li>
-        </ul>
-        <a class="close-popup" data-popup="inventory-popup" href="#">Close</a>
-      </div>
-      <div class="popup" id="location-popup">
-        <h2>Location</h2>
-        <form>
-          <label for="input1">Input 1:</label>
-          <input type="text" id="input1" name="input1" placeholder="Enter value"><br>
-      
-          <label for="input2">Input 2:</label>
-          <input type="text" id="input2" name="input2" placeholder="Enter value"><br>
-      
-          <button id="submit-button">Submit</button>
-        </form>
-        <a class="close-popup" data-popup="location-popup" href="#">Close</a>
-      </div>
-      <div id="caracther-popup">
-        <a class="close-popup" data-popup="caracther-popup" href="#">Close</a>
-      </div>
-			
-		</div>
-    <script>
-      // Define the function to be executed when the button is clicked
-      function displayValue() {
-        const a="aa";
-        const b="33";
-        /*
-        fetch('https://fctconnect23.oa.r.appspot.com/rest/test/add', {
-            method: 'POST',
-            headers: {
-              'x-auth-token': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI1MDgxZjlkYi05Y2MwLTQ3NDctODI2NS00MmRiZjc3NjUwOWUiLCJzdWIiOiJ1c2VyMyIsImlhdCI6MTY4Njc2NDM5MCwiZXhwIjoxNjg2NzcxNTkwLCJyb2xlIjoiRU1QTE9ZRUUifQ.kz8TNMHLNRUquPTAPG6AqzY_FcUarF-qKlwwFymcZuRebRetDijQkaHQy2Q-aFKjjUk5N1eujd5-K9AsjhU_DQ',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              x: a,
-              y: b
-            })
-          })
-          .then(response => {
-            if (response.ok) {
-              console.log(response); // get the value of the Content-Type header
-              return response.json();
-            } else {
-              alert("Wrong credencials or account waiting for activation");
-            }
-          })
-          .then(data => {
-            // handle successful login
-            //console.log(data);
-            //var token = data.token;
-            //console.log(token);
-            //sessionStorage.setItem('authToken', token);
-            //sessionStorage.setItem('username', usernamee);
-            //window.location.href = '/index.html';
-            // save the token in localStorage or a cookie for later use
-          })
-          .catch(error => {
-            // handle login failure
-            alert(error.message);
-          });
-          */
+      </ul>
+      <a class="close-popup" data-popup="inventory-popup" href="#">Close</a>
+    </div>
+    <div class="popup" id="location-popup">
+      <h2>Location</h2>
+      <form>
+        <label for="input1">Input 1:</label>
+        <input type="text" id="input1" name="input1" placeholder="Enter value"><br>
 
-          fetch('https://fctconnect23.oa.r.appspot.com/rest/test/fetch', {
-            method: 'GET',
-            headers: {
-              'x-auth-token': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI1MDgxZjlkYi05Y2MwLTQ3NDctODI2NS00MmRiZjc3NjUwOWUiLCJzdWIiOiJ1c2VyMyIsImlhdCI6MTY4Njc2NDM5MCwiZXhwIjoxNjg2NzcxNTkwLCJyb2xlIjoiRU1QTE9ZRUUifQ.kz8TNMHLNRUquPTAPG6AqzY_FcUarF-qKlwwFymcZuRebRetDijQkaHQy2Q-aFKjjUk5N1eujd5-K9AsjhU_DQ'
-            }
-          })
-          .then(response => {
-            if (response.ok) {
-              console.log(response.body); // get the value of the Content-Type header
-              return response.json();
-            } else {
-              alert("Wrong credencials or account waiting for activation");
-            }
-          })
-          .then(data => {
-            console.log(data);
-          })
-          .catch(error => {
-            // handle login failure
-            alert(error.message);
-          });
-        }
-        
-      //localStorage.setItem('test_localStorage', 'haaaaa');
-      // Attach the function to the button's click event
-      var button = document.getElementById("myButton");
-      button.addEventListener("click", displayValue);
-    </script>
+        <label for="input2">Input 2:</label>
+        <input type="text" id="input2" name="input2" placeholder="Enter value"><br>
 
-    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+        <button id="submit-button">Submit</button>
+      </form>
+      <a class="close-popup" data-popup="location-popup" href="#">Close</a>
+    </div>
+    <div id="caracther-popup">
+      <a class="close-popup" data-popup="caracther-popup" href="#">Close</a>
+    </div>
 
-    <script type="importmap">
+  </div>
+  
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
       {
         "imports": {
           "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
@@ -150,9 +179,10 @@
         }
       }
     </script>
-    <script type="module" src="./three.js">
-			
-		</script>
-    
-  </body>
+  <script type="module" src="./three.js">
+
+  </script>
+
+</body>
+
 </html>

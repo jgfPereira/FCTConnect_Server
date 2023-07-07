@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 body {
-    /* remove margins and scroll bars */
-    margin: 0;
-    overflow: hidden;
+  /* remove margins and scroll bars */
+  margin: 0;
+  overflow: hidden;
 }
 
 #pop-up-buttons {
@@ -11,7 +13,6 @@ body {
   z-index: 999;
 }
 
-#menu-button,
 #inventory-button,
 #location-button,
 #caracther-button{
@@ -57,12 +58,18 @@ body {
 
 #caracther-popup a.close-popup {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  top:535px;
+  left:340px;
+  height:20px;
+  width:50px;
   z-index: 1001;
-  
+  /* Add animation */
+  transition: background-color 0.3s ease;
+  padding: 5px 10px;
+  background-color: red;
+  border-radius: 5px;
+  color: white;
 }
-
 
 .popup {
   position: absolute;
@@ -70,51 +77,92 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 300px;
-  background-color: #fff;
+  background-color: #12163A;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 15px;
   z-index: 1000;
   display: none;
+}
+
+.popup h1{
+  display:none;
 }
 
 .popup h2 {
   margin-top: 0;
 }
 
+.popup h3{
+  font-size: 1.2em;
+  font-weight: bold;
+  color: rgb(5, 5, 5);
+  margin-bottom: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  font-family: Impact, Arial, sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow: -1px -1px 0 rgb(255, 255, 255), 1px -1px 0 rgb(255, 255, 255), -1px 1px 0 rgb(255, 255, 255), 1px 1px 0 rgb(255, 255, 255);
+  text-align:center;
+}
 .popup ul {
-  list-style: none;
+  list-style:none;
   padding: 0;
   margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x:hidden;
 }
 
 .popup ul li {
+  margin-top: 5px;
   margin-bottom: 10px;
+  margin-left: 13px;
+  margin-right: 13px;
 }
 
 .popup ul li a {
   display: block;
-  padding: 5px 10px;
-  background-color: #f2f2f2;
-  border-radius: 5px;
+  padding: 5px 15px;
+  background-color: #00a534;
+  border-radius: 10px;
   text-decoration: none;
+  color: rgb(232, 232, 232);
+  /* Add animation */
+  transition: transform 0.3s ease;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.9em;
+  font-weight: bold;
+  font-style: italic;
+  transform: skew(-10deg);
+  text-shadow:
+    -1px -1px 0 white,
+    1px -1px 0 white,
+    -1px 1px 0 white,
+    1px 1px 0 white;
+  color: #000000;
+  text-align:center;
 }
 
-.popup ul li a:hover {
-  background-color: #e6e6e6;
-}
 
 .close-popup {
+  position: relative;
+  top:12px;
+  left:120px;
+  z-index: 1001;
   display: block;
   margin-top: 10px;
   text-align: center;
+  width: 40px;
   text-decoration: none;
   color: #333;
+  /* Add animation */
+  transition: background-color 0.3s ease;
+  padding: 5px 10px;
+  background-color: red;
+  border-radius: 5px;
+  color: white;
 }
-
-.close-popup:hover {
-  text-decoration: underline;
-}
-
 .card {
   position: relative;
   width: 190px;
