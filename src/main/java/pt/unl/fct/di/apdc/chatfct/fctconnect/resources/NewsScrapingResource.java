@@ -10,22 +10,24 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-@Path("/scrape")
+@Path("/scrapenews")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class TestScrapingResource {
+public class NewsScrapingResource {
 
     private static final String PAGE_PATH_PARAM = "page";
     private final Gson gson = new Gson();
 
-    public TestScrapingResource() {
+    public NewsScrapingResource() {
     }
 
     @GET
     public Response doScrapeAllNews() {
         try {
             return Response.ok(gson.toJson(JsoupUtils.scrape())).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson(e.getMessage())).build();
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson(e.getMessage())).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error --> " + e.getLocalizedMessage())).build();
         }
     }
 
@@ -34,8 +36,10 @@ public class TestScrapingResource {
     public Response doScrapNewsOfPage(@PathParam(PAGE_PATH_PARAM) String page) {
         try {
             return Response.ok(gson.toJson(JsoupUtils.scrape(Integer.parseInt(page)))).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson(e.getMessage())).build();
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson(e.getMessage())).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error --> " + e.getLocalizedMessage())).build();
         }
     }
 }
