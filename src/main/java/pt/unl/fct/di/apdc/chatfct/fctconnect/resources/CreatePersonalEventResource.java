@@ -128,20 +128,20 @@ public class CreatePersonalEventResource {
     private Entity createPersonalEvent(Key personalEventKey, CreatePersonalEventData data) {
         Entity.Builder eb = Entity.newBuilder(personalEventKey)
                 .set(DatastoreTypes.EVENT_NAME_ATTR, data.name)
-                .set(DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description)
                 .set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(data.startDate))
                 .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate))
-                .set(DatastoreTypes.EVENT_COLOR_ATTR, data.color)
-                .set(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR, data.recurrenceRule);
-        setLocationWithNull(eb, data.location);
+                .set(DatastoreTypes.EVENT_COLOR_ATTR, data.color);
+        setWithNull(eb, DatastoreTypes.EVENT_LOCATION_ATTR, data.location);
+        setWithNull(eb, DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description);
+        setWithNull(eb, DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR, data.recurrenceRule);
         return eb.build();
     }
 
-    private void setLocationWithNull(Entity.Builder eb, String location) {
-        if (location == null) {
-            eb.setNull(DatastoreTypes.EVENT_LOCATION_ATTR);
+    private void setWithNull(Entity.Builder eb, String propertyName, String value) {
+        if (value == null) {
+            eb.setNull(propertyName);
         } else {
-            eb.set(DatastoreTypes.EVENT_LOCATION_ATTR, location);
+            eb.set(propertyName, value);
         }
     }
 

@@ -22,11 +22,11 @@ public class ListedEvent {
         id = event.getKey().getName();
         name = event.getString(DatastoreTypes.EVENT_NAME_ATTR);
         location = handleNull(event.getString(DatastoreTypes.EVENT_LOCATION_ATTR));
-        description = event.getString(DatastoreTypes.EVENT_DESCRIPTION_ATTR);
+        description = handleNull(event.getString(DatastoreTypes.EVENT_DESCRIPTION_ATTR));
         startDate = dateToString(event.getTimestamp(DatastoreTypes.EVENT_START_DATE_ATTR).toDate());
         endDate = dateToString(event.getTimestamp(DatastoreTypes.EVENT_END_DATE_ATTR).toDate());
         color = event.getString(DatastoreTypes.EVENT_COLOR_ATTR);
-        recurrenceRule = event.getString(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR);
+        recurrenceRule = handleNull(event.getString(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR));
     }
 
     public static ListedEvent createListedEvent(Entity event) {

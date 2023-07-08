@@ -179,13 +179,21 @@ public class CreateEventBackOfficeResource {
         Entity.Builder eb = Entity.newBuilder(eventKey)
                 .set(DatastoreTypes.EVENT_NAME_ATTR, data.name)
                 .set(DatastoreTypes.EVENT_LOCATION_ATTR, data.location)
-                .set(DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description)
                 .set(DatastoreTypes.EVENT_ACL_ATTR, ListValue.of(data.getAclFirst(), data.getAclRest()))
                 .set(DatastoreTypes.EVENT_START_DATE_ATTR, Timestamp.parseTimestamp(data.startDate))
                 .set(DatastoreTypes.EVENT_END_DATE_ATTR, Timestamp.parseTimestamp(data.endDate))
-                .set(DatastoreTypes.EVENT_COLOR_ATTR, data.color)
-                .set(DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR, data.recurrenceRule);
+                .set(DatastoreTypes.EVENT_COLOR_ATTR, data.color);
+        setWithNull(eb, DatastoreTypes.EVENT_DESCRIPTION_ATTR, data.description);
+        setWithNull(eb, DatastoreTypes.EVENT_RECURRENCE_RULE_ATTR, data.recurrenceRule);
         return eb.build();
+    }
+
+    private void setWithNull(Entity.Builder eb, String propertyName, String value) {
+        if (value == null) {
+            eb.setNull(propertyName);
+        } else {
+            eb.set(propertyName, value);
+        }
     }
 
     private TokenInfo verifyToken(final String token) {

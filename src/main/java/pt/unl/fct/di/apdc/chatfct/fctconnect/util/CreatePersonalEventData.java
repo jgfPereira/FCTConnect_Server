@@ -14,8 +14,7 @@ public class CreatePersonalEventData {
     }
 
     public boolean validateData() {
-        return !(name == null || description == null
-                || startDate == null || endDate == null || color == null || recurrenceRule == null
+        return !(name == null || startDate == null || endDate == null || color == null
                 || !DateUtils.isTimestampValid(startDate) || !DateUtils.isTimestampValid(endDate));
     }
 
