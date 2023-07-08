@@ -96,7 +96,7 @@ public class ListPersonalEventsResource {
         return Query.newEntityQueryBuilder()
                 .setKind(DatastoreTypes.PERSONAL_EVENT_TYPE)
                 .setFilter(StructuredQuery.PropertyFilter.hasAncestor(userKey))
-                .setOrderBy(StructuredQuery.OrderBy.asc(DatastoreTypes.EVENT_END_DATE_ATTR))
+                .setOrderBy(StructuredQuery.OrderBy.asc(DatastoreTypes.EVENT_START_DATE_ATTR))
                 .build();
     }
 

@@ -22,4 +22,4 @@ indexes:
   - kind: PersonalEvent
     ancestor: yes
     properties:
-      - name: endDate
+      - name: startDate
