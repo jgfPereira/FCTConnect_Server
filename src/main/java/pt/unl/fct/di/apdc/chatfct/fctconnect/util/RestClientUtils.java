@@ -11,6 +11,7 @@ public final class RestClientUtils {
     private static final String REMOVE_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removefriend";
     private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
+    private static final String ADD_CHECKPOINT_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addcheckpoint";
 
     private RestClientUtils() {
     }
@@ -42,5 +43,12 @@ public final class RestClientUtils {
                 .path(username)
                 .request(MediaType.APPLICATION_JSON)
                 .delete();
+    }
+
+    public static Response postCheckpoint(AddCheckpointData data) {
+        return ClientBuilder.newClient()
+                .target(ADD_CHECKPOINT_URI_DB)
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
 }
