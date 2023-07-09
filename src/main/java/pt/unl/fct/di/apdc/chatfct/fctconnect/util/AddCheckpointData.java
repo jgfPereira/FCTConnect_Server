@@ -14,6 +14,10 @@ public class AddCheckpointData {
         return !(username == null || quest == null || score == null || items == null);
     }
 
+    public boolean validateQuestAndScore() {
+        return quest.matches(RegexExp.WHOLE_NUMBER_REGEX) && score.matches(RegexExp.WHOLE_NUMBER_REGEX);
+    }
+
     public boolean isTokenSameUser(String usernameToken) {
         return username.equals(usernameToken);
     }

@@ -98,6 +98,9 @@ public class AddCheckpointResource {
         } else if (!data.isTokenSameUser(username)) {
             LOG.fine("Invalid data: usernames dont match");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - usernames dont match")).build();
+        } else if (!data.validateQuestAndScore()) {
+            LOG.fine("Invalid data: quest or score are not whole numbers");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - quest or score are not whole numbers")).build();
         }
         return null;
     }
