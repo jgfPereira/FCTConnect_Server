@@ -63,7 +63,9 @@ public class RegisterBackOfficeResource {
             final Entity userCached = getBackOfficeUserCached(username);
             final boolean isUserCached = isCached(userCached);
             if (isUserCached) {
-                backOfficeUserOnDB = userCached;
+                txn.rollback();
+                LOG.fine("User already exists");
+                return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - username is already taken")).build();
             } else {
                 backOfficeUserOnDB = txn.get(key);
                 final Response checkBackOfficeUserOnDB = checkUserOnDB(backOfficeUserOnDB);

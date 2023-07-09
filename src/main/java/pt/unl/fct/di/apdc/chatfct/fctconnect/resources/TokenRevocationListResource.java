@@ -44,6 +44,7 @@ public class TokenRevocationListResource {
             final Entity tokenRevokedCached = getTokenRevokedCached(tokenID);
             final boolean isTokenRevokedCached = isCached(tokenRevokedCached);
             if (isTokenRevokedCached) {
+                txn.rollback();
                 LOG.fine("Token was already revoked");
                 return Response.ok(gson.toJson("Logout was successful - token was already revoked")).build();
             } else {

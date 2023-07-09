@@ -66,7 +66,9 @@ public class RegisterResource {
             final Entity userCached = getUserCached(username);
             final boolean isUserCached = isCached(userCached);
             if (isUserCached) {
-                userOnDB = userCached;
+                txn.rollback();
+                LOG.fine("User already exists");
+                return Response.status(Response.Status.CONFLICT).entity(gson.toJson("Conflict - username is already taken")).build();
             } else {
                 userOnDB = txn.get(key);
                 final Response checkUserOnDB = checkUserOnDB(userOnDB);
@@ -133,8 +135,8 @@ public class RegisterResource {
                 backOfficeUserOnDB = userCached;
             } else {
                 backOfficeUserOnDB = txn.get(key);
-                final Response checkRegularUserOnDB = checkUserOnDB(backOfficeUserOnDB);
-                if (checkRegularUserOnDB != null) {
+                final Response checkBackOfficeUserOnDB = checkUserOnDB(backOfficeUserOnDB);
+                if (checkBackOfficeUserOnDB != null) {
                     memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, username), backOfficeUserOnDB);
                     txn.rollback();
                     return false;

@@ -86,7 +86,7 @@ public class ConfirmAccountResource {
                 memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), user);
             }
             final Entity confirmedUser = confirmUser(user);
-            memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), user);
+            memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), confirmedUser);
             txn.update(confirmedUser);
             txn.delete(key);
             txn.commit();

@@ -16,7 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-
 @Path("/addfriend")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class AddFriendResource {

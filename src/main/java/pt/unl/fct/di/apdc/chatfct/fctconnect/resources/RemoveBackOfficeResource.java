@@ -101,6 +101,7 @@ public class RemoveBackOfficeResource {
                     txn.rollback();
                     return checkUserOnDB;
                 }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, otherUsername), otherOnDB);
             }
             final Response checkRemovePermissions = checkRemoveRegularUserPermissions(usernameRole, otherUsername);
             if (checkRemovePermissions != null) {
@@ -267,6 +268,7 @@ public class RemoveBackOfficeResource {
                     txn.rollback();
                     return checkUserOnDB;
                 }
+                memcacheBackOfficeUsers.put(String.format(MemcacheUtils.BACK_OFFICE_USER_ENTITY_KEY, otherUsername), otherOnDB);
             }
             final String otherRole = getOtherRole(otherOnDB);
             final Response checkRemovePermissions = checkRemoveBackOfficeUserPermissions(otherUsername, username, usernameRole, otherRole);
