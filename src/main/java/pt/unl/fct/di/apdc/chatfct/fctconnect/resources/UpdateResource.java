@@ -27,7 +27,8 @@ import java.util.logging.Logger;
 public class UpdateResource {
 
     private static final String START_OF_DAY_UTC = "T00:00:00Z";
-    private static final String IMAGE_MIME_FMT = "image/%s";
+    private static final String IMAGE_MIME_FMT = "image/jpeg";
+    private static final String NO_CACHING_FLAG = "no-store";
     private static final Logger LOG = Logger.getLogger(UpdateResource.class.getName());
     private static final String SEPARATOR = " ";
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -322,7 +323,7 @@ public class UpdateResource {
             List<FileItem> items = upload.parseRequest(request);
             for (FileItem item : items) {
                 if (!item.isFormField())
-                    return new PhotoData(item.getInputStream(), item.getName());
+                    return new PhotoData(item.getInputStream());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -335,16 +336,16 @@ public class UpdateResource {
         if (photoData == null) {
             return null;
         }
-        LOG.severe(photoData.toString());
-        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + photoData.getCompleteFileExtension();
+        final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + PhotoData.IMAGE_EXTENSION;
         final Storage storage = StorageOptions.getDefaultInstance().getService();
         final BlobId blobId = BlobId.of(DatastoreTypes.BUCKET_NAME, photoName);
         final BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setAcl(Collections.singletonList(Acl.newBuilder(Acl.User.ofAllUsers(), Acl.Role.READER).build()))
-                .setContentType(String.format(IMAGE_MIME_FMT, photoData.getOnlyFileExtension()))
+                .setContentType(IMAGE_MIME_FMT)
+                .setCacheControl(NO_CACHING_FLAG)
                 .build();
         try {
-            return storage.create(blobInfo, photoData.getBytes());
+            return storage.create(blobInfo, ImageUtils.convertToJPEG(photoData.getInputStream()));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
