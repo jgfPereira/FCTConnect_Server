@@ -345,7 +345,7 @@ public class UpdateResource {
                 .setCacheControl(NO_CACHING_FLAG)
                 .build();
         try {
-            return storage.create(blobInfo, ImageUtils.convertToJPEG(photoData.getInputStream()));
+            return storage.create(blobInfo, ImageUtils.convertToJPEGThumbnailator(photoData.getInputStream()));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
