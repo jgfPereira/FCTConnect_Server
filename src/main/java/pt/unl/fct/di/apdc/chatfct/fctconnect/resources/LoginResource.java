@@ -129,7 +129,7 @@ public class LoginResource {
                 txn.commit();
                 memcacheLoginRegs.put(String.format(MemcacheUtils.USER_LOGIN_REG_KEY, data.username), loginRegistry);
                 LOG.fine("Wrong password - updated logs");
-                return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Wrong credentials")).build();
+                return Response.status(Status.UNAUTHORIZED).entity(gson.toJson("Palavra-passe incorreta")).build();
             }
         } catch (Exception e) {
             txn.rollback();
@@ -227,7 +227,7 @@ public class LoginResource {
         final String userStatus = userOnDB.getString(DatastoreTypes.USER_STATUS_ATTR);
         if (userStatus.equals(DatastoreTypes.DEFAULT_STATUS)) {
             LOG.fine("Account is not confirmed");
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Unauthorized - account is not confirmed")).build();
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Email ainda não foi confirmado")).build();
         }
         return null;
     }
