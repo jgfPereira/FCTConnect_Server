@@ -119,4 +119,58 @@ public class UpdateCheckpointInventoryResource {
             return null;
         }
     }
+
+    @PUT
+    @Path("/dropitem")
+    @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
+    public Response doDropItemFromInventory(UpdateCheckpointInventoryData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("User attempt to drop item from inventory");
+        final String token = TokenUtils.extractTokenFromHeaders(request);
+        TokenInfo tokenInfo = verifyToken(token);
+        if (tokenInfo == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
+        }
+        LOG.fine("Valid token. Proceeding...");
+        final String username = tokenInfo.getUsername();
+        final Response checkData = checkData(data, username);
+        if (checkData != null) {
+            return checkData;
+        }
+        Key usernameKey = userKeyFactory.newKey(username);
+        Transaction txn = datastore.newTransaction();
+        try {
+            Entity userOnDB;
+            final Entity userCached = getUserCached(username);
+            final boolean isUserCached = isCached(userCached);
+            if (isUserCached) {
+                userOnDB = userCached;
+            } else {
+                userOnDB = txn.get(usernameKey);
+                Response checkUserOnDB = checkUserOnDB(userOnDB);
+                if (checkUserOnDB != null) {
+                    txn.rollback();
+                    return checkUserOnDB;
+                }
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
+            }
+            final Response deleteItemFromInventoryDBRequest = RestClientUtils.deleteItemFromInventory(data);
+            if (deleteItemFromInventoryDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
+                txn.commit();
+                LOG.fine("Item was dropped from inventory");
+            } else {
+                txn.rollback();
+                LOG.fine(deleteItemFromInventoryDBRequest.readEntity(String.class));
+            }
+            return deleteItemFromInventoryDBRequest;
+        } catch (Exception e) {
+            txn.rollback();
+            LOG.severe(e.getLocalizedMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();
+            }
+        }
+    }
 }

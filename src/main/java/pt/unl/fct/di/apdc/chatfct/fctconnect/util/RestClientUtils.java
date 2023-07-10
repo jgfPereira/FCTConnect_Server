@@ -13,6 +13,7 @@ public final class RestClientUtils {
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
     private static final String ADD_CHECKPOINT_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addcheckpoint";
     private static final String ADD_ITEM_TO_INVENTORY_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/updateinventory/additem";
+    private static final String DROP_ITEM_TO_INVENTORY_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/updateinventory/dropitem";
 
     private RestClientUtils() {
     }
@@ -56,6 +57,13 @@ public final class RestClientUtils {
     public static Response putItemOnInventory(UpdateCheckpointInventoryData data) {
         return ClientBuilder.newClient()
                 .target(ADD_ITEM_TO_INVENTORY_URI_DB)
+                .request(MediaType.APPLICATION_JSON)
+                .put(Entity.entity(data, MediaType.APPLICATION_JSON));
+    }
+
+    public static Response deleteItemFromInventory(UpdateCheckpointInventoryData data) {
+        return ClientBuilder.newClient()
+                .target(DROP_ITEM_TO_INVENTORY_URI_DB)
                 .request(MediaType.APPLICATION_JSON)
                 .put(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
