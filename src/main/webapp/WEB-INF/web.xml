@@ -37,7 +37,6 @@
             <param-name>jersey.config.servlet.filter.contextPath</param-name>
             <param-value>/rest/*</param-value>
         </init-param>
-
         <init-param>
             <param-name>jersey.config.server.tracing.type</param-name>
             <param-value>ALL</param-value>
