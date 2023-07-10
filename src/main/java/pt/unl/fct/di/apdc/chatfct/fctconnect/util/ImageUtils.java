@@ -17,8 +17,9 @@ public final class ImageUtils {
     public static byte[] convertToJPEG(InputStream inputStream) {
         try {
             final BufferedImage image = ImageIO.read(inputStream);
+            final BufferedImage imageNoAlphaChannel = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
             final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            ImageIO.write(image, JPEG_IMAGE_FORMAT, byteStream);
+            ImageIO.write(imageNoAlphaChannel, JPEG_IMAGE_FORMAT, byteStream);
             return byteStream.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
