@@ -24,7 +24,7 @@ public final class ImageUtils {
             pixelGrabber.grabPixels();
             final int width = pixelGrabber.getWidth();
             final int height = pixelGrabber.getHeight();
-            final DataBuffer buffer = new DataBufferInt((int[]) pixelGrabber.getPixels(), width * height);
+            final DataBuffer buffer = new DataBufferInt((int[]) pixelGrabber.getPixels(), pixelGrabber.getWidth() * pixelGrabber.getHeight());
             final WritableRaster raster = Raster.createPackedRaster(buffer, width, height, width, RGB_MASKS, null);
             final BufferedImage bufferedImage = new BufferedImage(RGB_OPAQUE, raster, false, null);
             final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
