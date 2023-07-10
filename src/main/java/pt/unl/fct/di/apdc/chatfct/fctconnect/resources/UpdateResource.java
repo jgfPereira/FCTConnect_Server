@@ -335,6 +335,7 @@ public class UpdateResource {
         if (photoData == null) {
             return null;
         }
+        LOG.severe(photoData.toString());
         final String photoName = String.format(DatastoreTypes.PHOTO_NAME_FMT, username) + photoData.getCompleteFileExtension();
         final Storage storage = StorageOptions.getDefaultInstance().getService();
         final BlobId blobId = BlobId.of(DatastoreTypes.BUCKET_NAME, photoName);
