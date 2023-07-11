@@ -84,7 +84,7 @@ public class RegisterResource {
             Entity specificUser = createSpecificUser(username, data.role);
             memcacheSpecificUsers.put(String.format(MemcacheUtils.SPECIFIC_USER_ENTITY_KEY, username), specificUser);
             txn.put(specificUser);
-            final Response createAccountConfirmation = createAccountConfirmation(txn, username, data.email);
+            final Response createAccountConfirmation = createAccountConfirmation(txn, username, data.email, data.name);
             if (createAccountConfirmation != null) {
                 txn.rollback();
                 return createAccountConfirmation;
@@ -211,7 +211,7 @@ public class RegisterResource {
         return eb.build();
     }
 
-    private Response createAccountConfirmation(Transaction txn, String username, String email) {
+    private Response createAccountConfirmation(Transaction txn, String username, String email, String name) {
         final String code = UUID.randomUUID().toString();
         final Key key = accountConfirmationFactory.newKey(code);
         final Entity accountConfOnDB = txn.get(key);
@@ -221,7 +221,7 @@ public class RegisterResource {
         }
         final Entity accountConfirmation = createAccountConf(key, username);
         txn.put(accountConfirmation);
-        final boolean isEmailSent = RegisterEmailConfirmationUtils.sendEmail(email, code);
+        final boolean isEmailSent = RegisterEmailConfirmationUtils.sendEmail(email, code, username, name);
         if (!isEmailSent) {
             LOG.fine("Email was not sent - register cancelled");
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(gson.toJson("Server Error")).build();

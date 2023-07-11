@@ -28,18 +28,18 @@ public final class RegisterEmailConfirmationUtils {
             "        }\n" +
             "\n" +
             "        h1,\n" +
-            "        h3 {\n" +
+            "        h3,\n" +
+            "        h5 {\n" +
             "            color: #333333;\n" +
             "        }\n" +
             "\n" +
             "        h6 {\n" +
             "            color: darkgray;\n" +
-            "            margin-top: 20px;\n" +
+            "            margin-top: -5px;\n" +
             "        }\n" +
             "\n" +
             "        p {\n" +
             "            color: #666666;\n" +
-            "\n" +
             "        }\n" +
             "\n" +
             "        a {\n" +
@@ -69,10 +69,12 @@ public final class RegisterEmailConfirmationUtils {
             "</head>\n" +
             "<body>\n" +
             "<h1>Confirm Your Account</h1>\n" +
-            "<h3>Welcome to FCTConnect!</h3>\n" +
+            "<h3>Welcome to FCTConnect, %s!</h3>\n" +
             "<img alt=\"FCTConnect Logo\" class=\"logo\" src=\"https://storage.googleapis.com/fctconnect23.appspot.com/logo.jpeg\"/>\n" +
             "<p>Please click the following button to confirm your account:</p>\n" +
-            "<a class=\"confirmation-link\" href=\"https://fctconnect23.oa.r.appspot.com/rest/register/confirm?code=%s\">Confirm Account</a>\n" +
+            "<a class=\"confirmation-link\" href=\"https://fctconnect23.oa.r.appspot.com/rest/register/confirm?code=%s\">Confirm\n" +
+            "    Account</a>\n" +
+            "<h5>Your username is %s</h5>\n" +
             "<h6>If you didn't create an account in FCTConnect, please ignore this message.</h6>\n" +
             "</body>\n" +
             "</html>\n";
@@ -80,13 +82,13 @@ public final class RegisterEmailConfirmationUtils {
     private RegisterEmailConfirmationUtils() {
     }
 
-    public static boolean sendEmail(String userEmail, String code) {
+    public static boolean sendEmail(String userEmail, String code, String username, String name) {
         try {
             final String sendgridApiKey = System.getenv(SENDGRID_API_KEY_ENV);
             final String senderEmail = System.getenv(SENDER_EMAIL_ENV);
             Email from = new Email(senderEmail);
             Email to = new Email(userEmail);
-            Content content = new Content(SENDGRID_CONTENT_TYPE, String.format(HTML_STR_MSG_FMT, code));
+            Content content = new Content(SENDGRID_CONTENT_TYPE, String.format(HTML_STR_MSG_FMT, name, code, username));
             Mail email = new Mail(from, EMAIL_SUBJECT, to, content);
             SendGrid sg = new SendGrid(sendgridApiKey);
             Request request = new Request();
