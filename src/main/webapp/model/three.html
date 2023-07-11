@@ -5,8 +5,25 @@
   <link href="./styles/main.css" rel="stylesheet" type="text/css" />
   <link href="./styles/menu.css" rel="stylesheet" type="text/css" />
   <link href="./styles/inventory.css" rel="stylesheet" type="text/css" />
+  <link href="./styles/newitempopup.css" rel="stylesheet" type="text/css" />
+  <link href="./styles/locations.css" rel="stylesheet" type="text/css" />
+  <link href="./styles/character.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="styles/touch-pad.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    .icon-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
+    }
+
+    .icon-container svg {
+      width: 40px;
+      height: 40px;
+    }
+  </style>
 
 </head>
 
@@ -23,21 +40,23 @@
         <li>
           <div id="inventory">
             <a style="--clr: rgb(56,56,246);" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" id="IconChangeColor" height="40" width="40">
-                <rect width="256" height="256" fill="none"></rect>
-                <path d="M96,48h64a48,48,0,0,1,48,48V216a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V96A48,48,0,0,1,96,48Z"
-                  fill="#b86b00" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"
-                  id="mainIconPathAttribute"></path>
-                <path d="M80,224V152a16,16,0,0,1,16-16h64a16,16,0,0,1,16,16v72" fill="#b86b00" stroke="#000"
-                  stroke-linecap="round" stroke-linejoin="round" stroke-width="8" id="mainIconPathAttribute"></path>
-                <path d="M96,48V32a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V48" fill="#b86b00" stroke="#000"
-                  stroke-linecap="round" stroke-linejoin="round" stroke-width="8" id="mainIconPathAttribute"></path>
-                <line x1="112" y1="88" x2="144" y2="88" fill="none" stroke="#000" stroke-linecap="round"
-                  stroke-linejoin="round" stroke-width="8"></line>
-                <line x1="80" y1="168" x2="176" y2="168" fill="none" stroke="#000" stroke-linecap="round"
-                  stroke-linejoin="round" stroke-width="8"></line>
-                <line x1="144" y1="168" x2="144" y2="184" fill="none" stroke="#000" stroke-linecap="round"
-                  stroke-linejoin="round" stroke-width="8"></line>
+              <svg fill="#ffffff" width="40px" height="40px" viewBox="0 0 128 128" id="Layer_1" version="1.1"
+                xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                stroke="#ffffff" stroke-width="1.152">
+
+                <g id="SVGRepo_bgCarrier" stroke-width="0" />
+
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" />
+
+                <g id="SVGRepo_iconCarrier">
+                  <g>
+                    <path
+                      d="M101.1,65.2l-0.3-27c0-7.2-3.9-13.5-9.7-17c-0.2-0.3-0.4-0.5-0.7-0.6c-2.8-1.4-5.8-2.2-9-2.2H81h-4.3 c-0.3-4.9-4.4-8.8-9.3-8.8h-6.1c-5,0-9,3.9-9.3,8.8h-4.7h-0.4c-0.2,0-0.3,0-0.5,0c-0.1,0-0.3,0-0.4,0C35.4,19,27,27.6,27,38.2v27.2 c-7.3,3.2-12.4,10.4-12.4,18.9v12.4c0,11.4,9.2,20.6,20.6,20.6h4c1.5,0.1,3.2,0,4.8,0c0.9,0,1.8,0,2.7,0H81c1.4,0,2.9,0,4.2,0.1 c1.3,0,2.6,0.1,3.8,0.1c1.2,0,2.4,0,3.5-0.2h0.8c11.4,0,20.6-9.2,20.6-20.6V84.3C114,75.6,108.7,68.2,101.1,65.2z M19.1,101.6 c4-0.7,7.1-4.2,7.1-8.4V82H27v24.6c0,2,0.3,3.8,1,5.2C23.8,109.8,20.5,106.1,19.1,101.6z M76.3,66.6v-2.1h3.1v2.1H76.3z M73.3,60.5 V59v-0.3h9.2V59v1.6H73.3z M76.3,54.9V52h3.1v2.9H76.3z M52.3,54.9h-3.1V52h3.1V54.9z M49.2,66.6v-2.4h3.1v2.4H49.2z M55.3,60.5 h-9.2v-1.9h9.2V60.5z M81,22.2h0.4c2.2,0,4.3,0.4,6.2,1.3V43c0,2.9-2.4,5.3-5.3,5.3h-1h-6.9H54.2h-6.9h-1c-2.9,0-5.3-2.4-5.3-5.3 V23.4c2-0.8,4.1-1.3,6.2-1.3H81z M37.2,25.4V43c0,2.4,0.9,4.5,2.4,6.1c1,2.3,3.2,4,5.8,4.3v1.5h-1.1c-1,0-1.9,0.8-1.9,1.9v5.6 c0,1,0.8,1.9,1.9,1.9h1.1v4.2c0,1,0.8,1.9,1.9,1.9h6.9c1,0,1.9-0.8,1.9-1.9v-4.2h1.1c1,0,1.9-0.8,1.9-1.9v-5.6c0-1-0.8-1.9-1.9-1.9 H56v-1.4h16.6v1.4h-1.1c-1,0-1.9,0.8-1.9,1.9v0.3v5.3v0.3c0,1,0.8,1.9,1.9,1.9h1.1v3.9c0,1,0.8,1.9,1.9,1.9h6.9 c1,0,1.9-0.8,1.9-1.9v-3.9h1.1c1,0,1.9-0.8,1.9-1.9v-0.3v-5.3v-0.3c0-1-0.8-1.9-1.9-1.9h-1.1v-1.5c2.6-0.3,4.8-2,5.8-4.3 c1.5-1.6,2.4-3.8,2.4-6.1V26c3.4,2.9,5.6,7.3,5.6,12.2l0.8,69.2c0,2.1-0.5,3.6-1.4,4.5c-1.9,1.9-6.2,1.7-11.1,1.6 c-1.4,0-2.9-0.1-4.3-0.1H46.8c-0.9,0-1.9,0-2.8,0c-1.7,0-3.3,0-4.7,0c0,0,0,0,0,0h0c-3.1-0.1-5.6-0.5-7-1.9c-1-1-1.5-2.6-1.5-5 V38.2C30.8,33,33.3,28.3,37.2,25.4z M109.7,82.8v15.5c-2-0.6-3.5-2.4-3.5-4.6V82.8H109.7z M101.3,78.3l-0.1-9c3.6,1.9,6.5,5.1,8,9 H101.3z M27,78.3h-7.5c1.4-3.7,4.1-6.8,7.5-8.7V78.3z M22.4,82.3v10.8c0,2.2-1.5,4.1-3.5,4.6V82.3H22.4z M101,111.6 c0.4-1.2,0.6-2.6,0.6-4.2L101.3,82h1.1v11.6c0,4.2,3,7.6,6.9,8.4C107.9,106.2,104.9,109.7,101,111.6z M61.3,13.4h6.1 c2.9,0,5.3,2.2,5.6,5.1H55.7C56,15.6,58.4,13.4,61.3,13.4z" />
+                    <path
+                      d="M35.2,83.3V99c0,5.2,4.2,9.4,9.4,9.4H84c5.2,0,9.4-4.2,9.4-9.4V83.3c0-5.2-4.2-9.4-9.4-9.4H44.6 C39.4,73.9,35.2,78.1,35.2,83.3z M89.6,83.3L89.6,83.3l-50.7,0v0c0-3.1,2.5-5.6,5.6-5.6H84C87.1,77.7,89.6,80.2,89.6,83.3z M84,104.6H44.6c-3.1,0-5.6-2.5-5.6-5.6V87.1h50.7V99C89.6,102.1,87.1,104.6,84,104.6z" />
+                  </g>
+                </g>
+
               </svg>
               <span class="text">Inventory</span>
             </a>
@@ -46,24 +65,44 @@
         <li>
           <div id="location">
             <a style="--clr: rgb(56,56,246);" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-pin-fill"
-                viewBox="0 0 16 16" id="IconChangeColor">
-                <path
-                  d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5c0 .276-.224 1.5-.5 1.5s-.5-1.224-.5-1.5V10h-4a.5.5 0 0 1-.5-.5c0-.973.64-1.725 1.17-2.189A5.921 5.921 0 0 1 5 6.708V2.277a2.77 2.77 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"
-                  id="mainIconPathAttribute" fill="#ff0000"></path>
+              <svg version="1.0" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink" width="40px" height="40px" viewBox="0 0 64 64"
+                enable-background="new 0 0 64 64" xml:space="preserve" fill="#000000">
+                <g id="SVGRepo_bgCarrier" stroke-width="0" />
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" />
+                <g id="SVGRepo_iconCarrier">
+                  <g>
+                    <path fill="#ffffff"
+                      d="M32,52.789l-12-18C18.5,32,16,28.031,16,24c0-8.836,7.164-16,16-16s16,7.164,16,16 c0,4.031-2.055,8-4,10.789L32,52.789z" />
+                    <g>
+                      <path fill="#000000"
+                        d="M32,0C18.746,0,8,10.746,8,24c0,5.219,1.711,10.008,4.555,13.93c0.051,0.094,0.059,0.199,0.117,0.289 l16,24C29.414,63.332,30.664,64,32,64s2.586-0.668,3.328-1.781l16-24c0.059-0.09,0.066-0.195,0.117-0.289 C54.289,34.008,56,29.219,56,24C56,10.746,45.254,0,32,0z M44,34.789l-12,18l-12-18C18.5,32,16,28.031,16,24 c0-8.836,7.164-16,16-16s16,7.164,16,16C48,28.031,45.945,32,44,34.789z" />
+                      <circle fill="#000000" cx="32" cy="24" r="8" />
+                    </g>
+                  </g>
+                </g>
               </svg>
-              <span class="text">Location</span>
+              <span class="text">Points of Interest</span>
             </a>
           </div>
         </li>
         <li>
           <div id="character">
             <a style="--clr: rgb(56,56,246);" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person"
-                viewBox="0 0 16 16" id="IconChangeColor">
-                <path
-                  d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"
-                  id="mainIconPathAttribute"></path>
+              <svg width="40px" height="40px" viewBox="0 0 24 24" fill="#ffffff" xmlns="http://www.w3.org/2000/svg"
+                stroke="#000000">
+
+                <g id="SVGRepo_bgCarrier" stroke-width="0" />
+
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" />
+
+                <g id="SVGRepo_iconCarrier">
+                  <circle cx="12" cy="6" r="4" stroke="#000000" stroke-width="1.5" />
+                  <path
+                    d="M20 17.5C20 19.9853 20 22 12 22C4 22 4 19.9853 4 17.5C4 15.0147 7.58172 13 12 13C16.4183 13 20 15.0147 20 17.5Z"
+                    stroke="#000000" stroke-width="1.5" />
+                </g>
+
               </svg>
               <span class="text">Character</span>
             </a>
@@ -72,24 +111,37 @@
         <li>
           <div id="events">
             <a style="--clr: rgb(56,56,246);" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor"
-                class="bi bi-calendar-check" viewBox="0 0 16 16" id="IconChangeColor">
-                <path
-                  d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z"
-                  id="mainIconPathAttribute" fill="#000000"></path>
-                <path
-                  d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"
-                  id="mainIconPathAttribute" fill="#000000"></path>
+              <svg fill="#ffffff" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve" width="40px"
+                height="40px" stroke="none">
+
+                <g id="SVGRepo_bgCarrier" stroke-width="0" />
+
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" />
+
+                <g id="SVGRepo_iconCarrier">
+                  <style type="text/css">
+                    .st0 {
+                      fill: none;
+                    }
+                  </style>
+                  <g>
+                    <path
+                      d="M20,7.4v10.5c0,1.7-1.3,3-3,3H5.9c0,1.1,0.9,2,2,2H18c2.2,0,4-1.8,4-4V9.4C22,8.3,21.1,7.4,20,7.4z" />
+                    <g>
+                      <path
+                        d="M5,1.1v2H4c-1.1,0-2,0.9-2,2v12c0,1.1,0.9,2,2,2h12.2c1.1,0,2-0.9,2-2v-12c0-1.1-0.9-2-2-2h-1v-2h-2v2H7v-2 C7,1.1,5,1.1,5,1.1z M4,8.1h12.2v9H4V8.1z" />
+                      <path
+                        d="M13.7,16.3l-2.4-1.4L9,16.3l0.6-2.7l-2.1-1.8l2.8-0.2L11.4,9l1.1,2.5l2.8,0.3l-2.1,1.8L13.7,16.3z" />
+                    </g>
+                  </g>
+                  <rect class="st0" width="24" height="24" />
+                </g>
+
               </svg>
               <span class="text">Events</span>
             </a>
           </div>
-        </li>
-        <li>
-          <a style="--clr: rgb(56,56,246);" href="#">
-            <span class="icon bi-peace"></span>
-            <span class="text">Click me</span>
-          </a>
         </li>
       </ul>
     </div>
@@ -100,6 +152,21 @@
         <span></span>
         <span></span>
       </label>
+    </div>
+  </div>
+  <div class="icon-container">
+    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-gear-fill"
+      viewBox="0 0 16 16" id="IconChangeColor">
+      <path
+        d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"
+        id="mainIconPathAttribute" fill="#ffffff"></path>
+    </svg>
+  </div>
+  <div class="newitempopup">
+    <div class="newitempopup-content">
+      <div class="message">You picked up a new item!</div>
+      <img src="/images/book.jpg" alt="New Item">
+      <div class="item-name">Book</div>
     </div>
   </div>
   <div id="info">
@@ -118,56 +185,68 @@
     </div>
     <div class="inventory" id="inventory-popup">
       <h2>Inventory</h2>
-      <ul>
-        <ul>
-          <li>
-            <img src="book.jpg" alt="Item 1">
-            <span>Item 1</span>
-          </li>
-          <li>
-            <img src="book.jpg" alt="Item 2">
-            <span>Item 2</span>
-          </li>
-          <li>
-            <img src="book.jpg" alt="Item 3">
-            <span>Item 3</span>
-          </li>
-          <li>
-            <img src="book.jpg" alt="Item 3">
-            <span>Item 3</span>
-          </li>
-          <li>
-            <img src="book.jpg" alt="Item 3">
-            <span>Item 3</span>
-          </li>
-          <li>
-            <img src="book.jpg" alt="Item 3">
-            <span>Item 3</span>
-          </li>
-          <!-- Add more li elements for additional items -->
-        </ul>
+      <ul id="items">
+        <!--<li>
+          <img src="book.jpg" alt="Item 1">
+          <span>Item 1</span>
+        </li> -->
+        <!-- Add more li elements for additional items -->
       </ul>
       <a class="close-popup" data-popup="inventory-popup" href="#">Close</a>
     </div>
     <div class="popup" id="location-popup">
-      <h2>Location</h2>
-      <form>
-        <label for="input1">Input 1:</label>
-        <input type="text" id="input1" name="input1" placeholder="Enter value"><br>
+      <h3>Points of Interest</h3>
 
-        <label for="input2">Input 2:</label>
-        <input type="text" id="input2" name="input2" placeholder="Enter value"><br>
+      <div id="poi-popup" class="locations">
+        <label>
+          <input type="checkbox" name="filter" value="restaurants"> Restaurants
+        </label>
+        <label>
+          <input type="checkbox" name="filter" value="departments"> Departments
+        </label>
+        <label>
+          <input type="checkbox" name="filter" value="student spaces"> Student Spaces
+        </label>
+        <label>
+          <input type="checkbox" name="filter" value="markets"> Markets
+        </label>
+      </div>
 
-        <button id="submit-button">Submit</button>
-      </form>
+      <div id="buildingList">
+        <div id="buttons"></div>
+      </div>
       <a class="close-popup" data-popup="location-popup" href="#">Close</a>
     </div>
-    <div id="caracther-popup">
-      <a class="close-popup" data-popup="caracther-popup" href="#">Close</a>
+    
+    <div class = "character" id="character-popup">
+      <h2>Character</h2>
+      <ul id = "skins">
+        <li>
+          <img src="/images/afonso.png" alt = "Afonso">
+          <span>Afonso</span>
+          <a href="#">Equip</a>
+        </li>
+        <li>
+          <img src="/images/michelle.png" alt = "Michelle">
+          <span>Michelle</span>
+          <a href="#">Equip</a>
+        </li>
+        <li>
+          <img src="/images/amy.png" alt = "Amy">
+          <span>Amy</span>
+          <a href="#">Equip</a>
+        </li>
+        <li>
+          <img src="/images/timmy.png" alt = "Timmy">
+          <span>Timmy</span>
+          <a href="#">Equip</a>
+        </li>
+      </ul>
+      <a class="close-popup" data-popup="character-popup" href="#">Close</a>
     </div>
 
   </div>
-  
+
 
   <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 

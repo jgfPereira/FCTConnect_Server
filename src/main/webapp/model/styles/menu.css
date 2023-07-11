@@ -1,172 +1,181 @@
-*{
-    margin: 0;
-    padding: 0;
-    scroll-behavior: smooth;
-    font-family: Arial;
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  font-family: Arial;
 }
 
-body{
-    display:flex;
-    justify-content: center;
-    align-items: center;
-    height:100vh;
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-.menu-box{
-    position:fixed;
-    width:500px;
-    display:flex;
-    justify-content: center;
-    align-items: center;
+.menu-box {
+  position: fixed;
+  width: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
 }
 
-.menu-viewer{
-    position:fixed;
-    bottom:50px;
-    height:60px;
-    width:60px;
-    font-size: 25px;
-    transform:translateY(15px) ;
-    border:0;
-    border-radius: 50%;
-    background-color: rgb(218, 218, 218);
-    transition: .8s;
-    box-shadow: 0px 0px 5px 0px #a7a7a7;
+.menu-viewer {
+  position: fixed;
+  bottom: 50px;
+  height: 60px;
+  width: 60px;
+  font-size: 25px;
+  transform: translateY(15px);
+  border: 0;
+  border-radius: 50%;
+  background-color: rgb(218, 218, 218);
+  transition: .8s;
+  box-shadow: 0px 0px 5px 0px #a7a7a7;
 }
 
-.menu{
-    box-shadow: 0px 0px 5px 0px #dcdcdc;
-    background-color: #fff;
-    height: fit-content;
-    position: absolute;
-    top:0;
-    left: 50%;
-    padding: 10px;
-    transform: translateX(-50%) scale(0);
-    transition: .7s;
-    width: 200px;
-    border-radius: 20px;
-    z-index: 3;
+.menu {
+  box-shadow: 0px 0px 5px 0px #dcdcdc;
+  background-color: #12163A;
+  height: fit-content;
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  padding: 10px;
+  transform: translateX(-50%) scale(0);
+  transition: .7s;
+  width: 200px;
+  border-radius: 20px;
+  z-index: 3;
 }
 
-.menu::before{
-    content: '';
-    position: absolute;
-    left:50%;
-    transform: translateX(-50%) rotate(40deg);
-    bottom: -9px;
-    height: 20px;
-    width:20px;
-    z-index: -2;
-    background-color: #fff;
-    border-bottom-right-radius: 5px;
-    box-shadow: 2px 2px 5px 0px #dcdcdc;
+.menu::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) rotate(40deg);
+  bottom: -9px;
+  height: 20px;
+  width: 20px;
+  z-index: -2;
+  background-color: #12163A;
+  border-bottom-right-radius: 5px;
 }
 
-.menu ul{
-    margin: 0;
-    padding: 0;
-    position:relative;
+.menu ul {
+  margin: 0;
+  padding: 0;
+  position: relative;
 }
 
-.menu ul li{
-    list-style-type: none;
-    width:100%;
+.menu ul li {
+  list-style-type: none;
+  width: 100%;
 }
 
-.menu ul li a{
-    width: 100%;
-    text-decoration: none;
-    padding: 5px;
-    line-height: 40px;
-    display:flex;
+.menu ul li a {
+  width: 100%;
+  text-decoration: none;
+  padding: 5px;
+  line-height: 40px;
+  display: flex;
 }
 
-.menu ul li a span.icon{
-    height:40px;
-    width: 40px;
-    border-radius: 50%;
-    font-size:14px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color:var(--clr);
-    transition: .9s;
+.menu ul li a span.icon {
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--clr);
+  transition: .9s;
 }
 
-.menu ul li a span.text{
-    margin-left: 10px;
-    font-size: 13px;
-    color: #666;
-    font-weight: 400;
+.menu ul li a span.text {
+  margin-left: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.9em;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow:
+    -1px -1px 0 rgb(0, 0, 0),
+    1px -1px 0 rgb(0, 0, 0),
+    -1px 1px 0 rgb(0, 0, 0),
+    1px 1px 0 rgb(0, 0, 0);
+  color: #ffffff;
+
 }
 
-.menu ul li a:hover span.icon{
-    background-color: var(--clr);
-    color:#fff;
+.menu ul li a:hover span.icon {
+  background-color: var(--clr);
+  color: #fff;
 }
 
 
 .menu-button {
-    position: fixed;
-    left:10px;
-    top:15px;
-    z-index: 999;
-    width: 40px;
-    height: 30px;
-    background: transparent;
-    cursor: pointer;
-    display: block;
-  }
-  
-  .menu-button input {
-    display: none;
-  }
-  
-  .menu-button span {
-    display: block;
-    position: absolute;
-    height: 4px;
-    width: 100%;
-    background: black;
-    border-radius: 9px;
-    opacity: 1;
-    left: 0;
-    transform: rotate(0deg);
-    transition: .25s ease-in-out;
-  }
-  
-  .menu-button span:nth-of-type(1) {
-    top: 0px;
-    transform-origin: left center;
-  }
-  
-  .menu-button span:nth-of-type(2) {
-    top: 50%;
-    transform: translateY(-50%);
-    transform-origin: left center;
-  }
-  
-  .menu-button span:nth-of-type(3) {
-    top: 100%;
-    transform-origin: left center;
-    transform: translateY(-100%);
-  }
-  
-  .menu-button input:checked ~ span:nth-of-type(1) {
-    transform: rotate(45deg);
-    top: 0px;
-    left: 5px;
-  }
-  
-  .menu-button input:checked ~ span:nth-of-type(2) {
-    width: 0%;
-    opacity: 0;
-  }
-  
-  .menu-button input:checked ~ span:nth-of-type(3) {
-    transform: rotate(-45deg);
-    top: 28px;
-    left: 5px;
-  }
+  position: fixed;
+  left: 10px;
+  top: 15px;
+  z-index: 999;
+  width: 40px;
+  height: 30px;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.menu-button input {
+  display: none;
+}
+
+.menu-button span {
+  display: block;
+  position: absolute;
+  height: 4px;
+  width: 100%;
+  background: black;
+  border-radius: 9px;
+  opacity: 1;
+  left: 0;
+  transform: rotate(0deg);
+  transition: .25s ease-in-out;
+}
+
+.menu-button span:nth-of-type(1) {
+  top: 0px;
+  transform-origin: left center;
+}
+
+.menu-button span:nth-of-type(2) {
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+}
+
+.menu-button span:nth-of-type(3) {
+  top: 100%;
+  transform-origin: left center;
+  transform: translateY(-100%);
+}
+
+.menu-button input:checked~span:nth-of-type(1) {
+  transform: rotate(45deg);
+  top: 0px;
+  left: 5px;
+}
+
+.menu-button input:checked~span:nth-of-type(2) {
+  width: 0%;
+  opacity: 0;
+}
+
+.menu-button input:checked~span:nth-of-type(3) {
+  transform: rotate(-45deg);
+  top: 28px;
+  left: 5px;
+}

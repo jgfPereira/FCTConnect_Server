@@ -1,0 +1,47 @@
+.dialogs-container {
+    position: absolute;
+  }
+  
+  .dialog-container {
+    position: absolute;
+    bottom: 70px;
+    right: 10px;
+    width: 300px;
+    padding: 10px;
+    background-color: lightgray;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    z-index: 999;
+  }
+  
+  .dialog-container:before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 30px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 10px 0 10px;
+    border-color: lightgray transparent transparent transparent;
+    z-index: 1000;
+  }
+  
+  
+  .dialog-box {
+    padding: 10px;
+    height: auto; /* Remove the fixed height */
+    max-height: 200px; /* Add a max-height to limit the dialog height */
+    overflow-y: auto;
+  }
+  
+  .dialog-content {
+    display: block; /* Change to block level element */
+    word-break: break-word; /* Enable line breaks within words */
+    white-space: normal; /* Allow wrapping of long words */
+  }
+  
+  .dialog-text {
+    display: inline-block;
+  }
+  

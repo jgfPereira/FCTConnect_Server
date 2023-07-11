@@ -1,0 +1,56 @@
+.newitempopup {
+    position: fixed;
+    bottom: -110px;
+    right: -110px;
+    transform: translate(-50%, -50%);
+    background-color:  #12163A;
+    color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    z-index: 9999;
+    display: none;
+}
+
+.newitempopup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.message {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.newitempopup img {
+    width: 200px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.newitempopup.show {
+    display: block;
+    animation: fadeOut 3s ease-in-out;
+}
+
+.item-name {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        display: none;
+    }
+}

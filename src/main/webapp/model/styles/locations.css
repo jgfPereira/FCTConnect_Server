@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+#poi-popup {
+  margin-bottom: 20px;
+  
+}
+
+#poi-popup label {
+  display: block;
+  margin-bottom: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.9em;
+  font-weight: bold;
+  font-style: italic;
+  text-shadow:
+    -2px -2px 0 rgb(0, 0, 0),
+    2px -2px 0 rgb(0, 0, 0),
+    -2px 2px 0 rgb(0, 0, 0),
+    2px 2px 0 rgb(0, 0, 0);
+  color: #ffffff;
+
+}
+
+#buildingList {
+  margin-top: 20px;
+  overflow: auto;
+}
+
+#buildingList h2 {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: rgb(5, 5, 5);
+  margin-bottom: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  font-family: Impact, Arial, sans-serif;
+  font-style: italic;
+  text-shadow: -1px -1px 0 rgb(255, 255, 255), 1px -1px 0 rgb(255, 255, 255), -1px 1px 0 rgb(255, 255, 255), 1px 1px 0 rgb(255, 255, 255);
+}
+
+#buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#buttons button {
+  margin: 5px;
+  padding: 5px 15px;
+  background-color: #00a534;
+  border-radius: 10px;
+  text-decoration: none;
+  color: rgb(0, 0, 0);
+  /* Add animation */
+  transition: transform 0.3s ease;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.9em;
+  font-weight: bold;
+  font-style: italic;
+  transform: skew(-10deg);
+  text-shadow: -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white;
+}
