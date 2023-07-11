@@ -538,6 +538,7 @@ function init() {
 
     // Retrieve the value from local storage
     const yup = localStorage.getItem('username');
+    alert(yup);
     // const aaa = "pm.catarino";
     playerUsername=encodeBase64UrlSafe(yup);
 
@@ -763,7 +764,7 @@ function init() {
     gltfLoader.setDRACOLoader(dracoLoader);
     gltfLoader.load(
         // resource URL
-        '/compressedFinalDraco.glb',
+        './compressedFinalDraco.glb',
         // called when the resource is loaded
         function (draco) {
             model = draco.scene;
