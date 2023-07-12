@@ -17,6 +17,7 @@ const appSettings = {
 }
 
 let playerUsername;
+let playerName;
 var canvas, controls;
 var camera, scene, renderer, labelRenderer, ambientLight;
 var clock = new THREE.Clock();
@@ -43,11 +44,18 @@ let mapPointer;
 let mapPointerTimeout;
 let npc;
 let myInventory= ['item1', 'item2'];
+let mySkins= ['afonso', 'michelle', 'jackie', 'timmy'];
 let friendModels = {}; 
 const inventory = {
-    item1: { src: 'book.jpg', alt: 'Item 1' },
-    item2: { src: 'book.jpg', alt: 'Item 2' },
-    item3: { src: 'book.jpg', alt: 'Item 3' }
+    item1: { src: './images/book.jpg', alt: 'Item 1' },
+    item2: { src: './images/book.jpg', alt: 'Item 2' },
+    item3: { src: './images/book.jpg', alt: 'Item 3' }
+};
+const skins = {
+    afonso: { src: './images/afonso.png', alt: 'Afonso' },
+    michelle: { src: './images/michelle.png', alt: 'Michelle' },
+    jackie: { src: './images/amy.png', alt: 'Jackie' },
+    timmy: { src: './images/timmy.png', alt: 'Timmy' }
 };
 // Define an array of positions for the player to loop through
 const npcPositions = [
@@ -166,7 +174,7 @@ document.addEventListener('click', function (event) {
 });
 function placeMapPointer(position) {
     // Set the target position and duration for camera transition
-    const targetPosition = new THREE.Vector3(0, 400, 0);
+    const targetPosition = new THREE.Vector3(0, 500, 0);
     const duration = 2000; // Transition duration in milliseconds
     // Store the original camera position
     const originalCameraPosition = camera.position.clone();
@@ -309,6 +317,7 @@ function addItem(item) {
     setTimeout(hideItemPopup, 3000);
     myInventory.push(item);
 } 
+
 function inventoryHandler(inventoryPopup) {
     const ulElement = document.getElementById('items');
     ulElement.innerHTML = "";
@@ -327,6 +336,55 @@ function inventoryHandler(inventoryPopup) {
         ulElement.appendChild(newLiElement);
     }
     showPopup(inventoryPopup);
+}
+function characterHandler(skinsPopup) {
+    const ulElement = document.getElementById('skins');
+    ulElement.innerHTML = "";
+    console.log("dhvfaehkbfkusbhrfebjkse");
+    for (let i = 0; i < mySkins.length; i++) {
+        const skinId = mySkins[i];
+        const skin=skins[skinId];
+        // Create the <li> element
+        const liElement = document.createElement("li");
+
+        // Create the <img> element
+        const imgElement = document.createElement("img");
+        imgElement.src = skin.src;
+        imgElement.alt = skin.alt;
+
+        // Create the <span> element
+        const spanElement = document.createElement("span");
+        spanElement.textContent = skin.alt;
+
+        // Create the <a> element
+        const aElement = document.createElement("a");
+        aElement.href = "#";
+        aElement.textContent = "Equip";
+        aElement.addEventListener('click', function(event) {
+            event.preventDefault();
+            const popup = document.getElementById('character-popup');
+            console.log(popup)
+            popup.style.display = 'none';
+            canvas.style.display = 'none';
+            scene.remove(player);
+            const skinPath="./character/"+skinId+".glb"
+            gltfLoader.load(skinPath, function (gltf) {
+                player = gltf.scene;
+                createUltimate2(gltf.animations);
+                scene.add(player);
+            
+            });
+        });
+        // Append the <img>, <span>, and <a> elements to the <li> element
+        liElement.appendChild(imgElement);
+        liElement.appendChild(spanElement);
+        liElement.appendChild(aElement);
+
+        // Append the <li> element to the document body or any other desired parent element
+        ulElement.appendChild(liElement);
+
+    }
+    showPopup(skinsPopup);
 }
 
 function addControls(controlCoord) {
@@ -369,6 +427,12 @@ function enterRoom(roomPos) {
         camera= new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         controls = new OrbitControls(camera, renderer.domElement);
         controls.target.copy(player.position);
+        controls.minPolarAngle = 0;            // The minimum angle (in radians)
+        controls.maxPolarAngle = Math.PI / 2.2;  // The maximum angle (in radians)
+        controls.enablePan = false;
+        controls.enableDamping = true;
+        controls.maxDistance = 500;
+        controls.minDistance = 5;
     }
     isCodeExecutionEnabled=!isCodeExecutionEnabled;
 }
@@ -509,11 +573,11 @@ function decodeBase64UrlSafe(base64UrlSafe) {
 
 function init() {
     
-    /*
+    const auth = localStorage.getItem('authToken');
     fetch('https://fctconnect23.oa.r.appspot.com/rest/listevents', {
             method: 'GET',
             headers: {
-              'x-auth-token': 'Bearer ***REMOVED***'
+              'x-auth-token': 'Bearer '+ auth
             }
           })
           .then(response => {
@@ -534,17 +598,25 @@ function init() {
             // handle login failure
             //alert(error.message);
     });
-    */
+    
 
     // Retrieve the value from local storage
-    const yup = localStorage.getItem('username');
-    alert(yup);
-    // const aaa = "pm.catarino";
-    playerUsername=encodeBase64UrlSafe(yup);
+    playerUsername = localStorage.getItem('username');
+    playerName=playerUsername;
+    alert(playerName);
+    //const aaa = "pm.catarino";
+    playerUsername=encodeBase64UrlSafe(playerName);
+    localStorage.clear();
 
     const app = initializeApp(appSettings);
     const database = getDatabase(app);
     console.log(database);
+    /*
+    const inventoryDB = ref(database, "players");
+    console.log(shoppingListInDB);
+    */
+
+
     const shoppingListInDB = ref(database, "players");
     console.log(shoppingListInDB);
 
@@ -622,7 +694,7 @@ function init() {
                     console.log("model already exists");
                 } else {
                     console.log("model added");
-                    loaderrr.load('./character/friendsModelReduc.glb', (gltf) => {
+                    loaderrr.load('character/friendsModelReduc.glb', (gltf) => {
                         const fff = gltf.scene;
                         fff.position.set(x, 0, z);
                         scene.add(fff);
@@ -648,7 +720,7 @@ function init() {
                         cPointLabel2.element.style.textShadow =
                             "-1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black";
                         cPointLabel2.element.style.color = "white";
-                        cPointLabel2.position.set(x, 0, z);
+                        cPointLabel2.position.set(x, 3, z);
                         scene.add(cPointLabel2);
                         
                         friendModels[friendId] = {
@@ -684,7 +756,7 @@ function init() {
     menuButton.addEventListener('click', () => menuPop());
     document.getElementById('inventory').addEventListener('click', () => inventoryHandler(inventoryPopup));
     document.getElementById('location').addEventListener('click', () => showPopup(locationPopup));
-    document.getElementById('character').addEventListener('click', () => showPopup(characterPopup));
+    document.getElementById('character').addEventListener('click', () => characterHandler(characterPopup));
     document.getElementById('events').addEventListener('click', () => eventHandler("ALL"));
     const submitButton = document.getElementById('submit-button');
     // Add event listener to close all pop-ups
@@ -729,10 +801,10 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     // Set the minimum and maximum polar angles
     controls.minPolarAngle = 0;            // The minimum angle (in radians)
-    controls.maxPolarAngle = Math.PI / 2;  // The maximum angle (in radians)
+    controls.maxPolarAngle = Math.PI / 2.2;  // The maximum angle (in radians)
     controls.enablePan = false;
 	controls.enableDamping = true;
-    controls.maxDistance = 400;
+    controls.maxDistance = 500;
     controls.minDistance = 5;
 
     // Disable rotation and enable vertical panning
@@ -768,6 +840,7 @@ function init() {
         // called when the resource is loaded
         function (draco) {
             model = draco.scene;
+            model.position.y=-0.3;
             /*
             draco.scene.traverse(function (object) {
 
@@ -830,7 +903,7 @@ function init() {
         anim = gltf.animations;
     });
 
-    gltfLoader.load('./michelleComp.glb', function (gltf) {
+    gltfLoader.load('./character/michelle.glb', function (gltf) {
         player = gltf.scene;
         // Clone or create new instances of the objects in the GLTF scene
         //clonedPlayer = gltf.scene.clone(); // Clone the entire scene
@@ -844,7 +917,7 @@ function init() {
         //} );
         //mixer = new THREE.AnimationMixer( monster );
         //mixer.clipAction( anim ).play();
-        createUltimate(anim);
+        createUltimate2(gltf.animations);
         scene.add(player);
         //controls.target.copy(player.position);
         /*
@@ -995,7 +1068,9 @@ function init() {
 
     
     const p = document.createElement('p');
-    p.textContent = 'Kroben';
+    p.textContent = playerName;
+    if(playerName==null)
+        p.textContent="You";
     //p.style.color = 'white';
     cPointLabel = new CSS2DObject(p);
     cPointLabel.element.style.fontFamily = "'Bebas Neue', sans-serif";
@@ -1006,6 +1081,7 @@ function init() {
     cPointLabel.element.style.textShadow =
         "-1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black";
     cPointLabel.element.style.color = "white";
+    //yupyupyup
     scene.add(cPointLabel);
 
     
@@ -1056,6 +1132,7 @@ function movePlayer(){
             player.lookAt(player.position.clone().add(direction));
             controls.target.copy(player.position);
             cPointLabel.position.copy(player.position);
+            //console.log(cPointLabel.position.y);
             cPointLabel.position.y=3;
         }
     }
@@ -1166,6 +1243,9 @@ function animate() {
         if(yyy.z<rooms.lab.bottomZ)
             controls.setPosition(yyy.x, yyy.y, rooms.lab.bottomZ);
     }
+    if (mapPointer) {
+        mapPointer.rotation.y += 0.007;
+    }
 
     controls.update();
 
@@ -1243,6 +1323,49 @@ function createUltimate(animations) {
     activeAction.play();
     statesFolder.open();
     pFolder.open();
+
+}
+
+function createUltimate2(animations) {
+    //console.log(player.position);
+
+
+    mixer = new THREE.AnimationMixer(player);
+
+    actions = {};
+
+
+    for (let i = 0; i < animations.length; i++) {
+        const clip = animations[i];
+        const action = mixer.clipAction(clip);
+        actions[clip.name] = action;
+        console.log(action);
+        console.log(actions[clip.name]);
+    }
+
+    // states
+
+    //const statesFolder = gui.addFolder('Emotes');
+    //const clipCtrl = statesFolder.add(api, 'state').options(states);
+    //const pFolder = gui.addFolder('Personagens');
+    //const playersF = pFolder.add(pInit, 'state').options(players);
+    /*
+    clipCtrl.onChange(function () {
+        fadeToAction(api.state, 0.5);
+    });
+    
+    playersF.onChange(function () {
+        scene.remove(player);
+        gltfLoader.load(pInit.state, function (gltf) {
+            player = gltf.scene;
+            createUltimate(animations);
+            scene.add(player);
+           
+        });
+    });
+    */
+    activeAction = actions['walking'];
+    activeAction.play();
 
 }
 
