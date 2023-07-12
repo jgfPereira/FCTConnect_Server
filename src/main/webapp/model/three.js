@@ -43,13 +43,13 @@ let cube3;
 let mapPointer;
 let mapPointerTimeout;
 let npc;
-let myInventory= ['item1', 'item2'];
+let myInventory= [];
 let mySkins= ['afonso', 'michelle', 'jackie', 'timmy'];
 let friendModels = {}; 
 const inventory = {
     item1: { src: './images/book.jpg', alt: 'Item 1' },
     item2: { src: './images/book.jpg', alt: 'Item 2' },
-    item3: { src: './images/book.jpg', alt: 'Item 3' }
+    item3: { src: './images/book.jpg', alt: 'Book' }
 };
 const skins = {
     afonso: { src: './images/afonso.png', alt: 'Afonso' },
@@ -66,6 +66,7 @@ const npcPositions = [
   ];
   
 let currentNpcPositionIndex = 0;  // Index of the current position
+let currentRoom;
 const rooms = {
     lab: {
         topX: -20,
@@ -194,17 +195,20 @@ function placeMapPointer(position) {
         mapPointer.position.set(position.x, 30, position.z);
         scene.add(mapPointer);
         // Set a timeout to check player proximity and remove the map pointer
+        // mapPointerTimeout = setTimeout(function () {
+        //     const proximityRadius = 10; // Adjust this value as needed
+        //     // Calculate the distance between the player and map pointer in the xz-plane
+        //     const distanceX = Math.abs(player.position.x - position.x);
+        //     const distanceZ = Math.abs(player.position.z - position.z);
+        //     const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
+        //     if (distance <= proximityRadius) {
+        //         scene.remove(mapPointer);
+        //     }
+        //     console.log(distance);
+        // }, 0);
         mapPointerTimeout = setTimeout(function () {
-            const proximityRadius = 10; // Adjust this value as needed
-            // Calculate the distance between the player and map pointer in the xz-plane
-            const distanceX = Math.abs(player.position.x - position.x);
-            const distanceZ = Math.abs(player.position.z - position.z);
-            const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
-            if (distance <= proximityRadius) {
-                scene.remove(mapPointer);
-            }
-            console.log(distance);
-        }, 0);
+            scene.remove(mapPointer);
+        }, 180000); // 3 minutes in milliseconds
     });
     setTimeout(function () {
         new TWEEN.Tween(camera.position)
@@ -369,8 +373,10 @@ function characterHandler(skinsPopup) {
             scene.remove(player);
             const skinPath="./character/"+skinId+".glb"
             gltfLoader.load(skinPath, function (gltf) {
+                const aux=player.position;
                 player = gltf.scene;
                 createUltimate2(gltf.animations);
+                player.position.copy(aux);
                 scene.add(player);
             
             });
@@ -475,11 +481,13 @@ document.addEventListener('mousedown', (event) => {
         //console.log(intersects3[0].object.name);
         switch(passages[0].object.name){
             case 'rooftop':
+                currentRoom='roofTop';
                 console.log("rooftop");
-                enterRoom(rooms.lab.position);
+                enterRoom(rooms.roofTop.position);
                 break;
             case 'lab':
                 //addItem('item3');
+                currentRoom='lab';
                 if(isCodeExecutionEnabled){
                     scene.remove(model);
                     scene.add(laboratory);
@@ -979,10 +987,11 @@ function init() {
     const geometry3 = new THREE.BoxGeometry(1, 1, 1);
 
     // Create a green material
-    const material3 = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const material3 = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
 
     // Create a cube mesh using the geometry and material
     cube3 = new THREE.Mesh(geometry3, material3);
+    cube3.position.y=1;
     //cube4 = new THREE.Mesh(geometry3, material3);
     scene.add(cube3);
     //scene.add(cube4);
@@ -1162,6 +1171,7 @@ function moveNpc(){
         if (0.01 < distance) {
             npc.position.add(direction.normalize().multiplyScalar(0.01));
             cube3.position.copy(npc.position);
+            cube3.position.y=1;
             npc.lookAt(npc.position.clone().add(direction));
         }else {
             // Player has reached the target position, so update the index for the next position
@@ -1234,14 +1244,14 @@ function animate() {
         //player.position.y=0;
         const yyy=controls.getPosition();
         console.log(yyy);
-        if(yyy.x>rooms.lab.topX)
-            controls.setPosition(rooms.lab.topX, yyy.y, yyy.z);
-        if(yyy.x<rooms.lab.bottomX)
-            controls.setPosition(rooms.lab.bottomX, yyy.y, yyy.z);
-        if(yyy.z>rooms.lab.topZ)
-            controls.setPosition(yyy.x, yyy.y, rooms.lab.topZ);
-        if(yyy.z<rooms.lab.bottomZ)
-            controls.setPosition(yyy.x, yyy.y, rooms.lab.bottomZ);
+        if(yyy.x>rooms[currentRoom].topX)
+            controls.setPosition(rooms[currentRoom].topX, yyy.y, yyy.z);
+        if(yyy.x<rooms[currentRoom].bottomX)
+            controls.setPosition(rooms[currentRoom].bottomX, yyy.y, yyy.z);
+        if(yyy.z>rooms[currentRoom].topZ)
+            controls.setPosition(yyy.x, yyy.y, rooms[currentRoom].topZ);
+        if(yyy.z<rooms[currentRoom].bottomZ)
+            controls.setPosition(yyy.x, yyy.y, rooms[currentRoom].bottomZ);
     }
     if (mapPointer) {
         mapPointer.rotation.y += 0.007;
