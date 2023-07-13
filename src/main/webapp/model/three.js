@@ -121,7 +121,7 @@ init();
 
 
 
-latestUserPosition.set(5, 0, 5);
+// latestUserPosition.set(5, 0, 5);
 /*
 document.addEventListener('mousedown', (event) => {
   const mouse = new THREE.Vector2(
@@ -611,7 +611,6 @@ function init() {
     // Retrieve the value from local storage
     playerUsername = localStorage.getItem('username');
     playerName=playerUsername;
-    alert(playerName);
     //const aaa = "pm.catarino";
     playerUsername=encodeBase64UrlSafe(playerName);
     localStorage.clear();
@@ -926,6 +925,7 @@ function init() {
         //mixer = new THREE.AnimationMixer( monster );
         //mixer.clipAction( anim ).play();
         createUltimate2(gltf.animations);
+        // player.position.copy(latestUserPosition);
         scene.add(player);
         //controls.target.copy(player.position);
         /*
