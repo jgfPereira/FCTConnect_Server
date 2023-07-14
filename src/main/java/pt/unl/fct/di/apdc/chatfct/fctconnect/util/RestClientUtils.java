@@ -8,6 +8,7 @@ import javax.ws.rs.core.Response;
 public final class RestClientUtils {
 
     private static final String SEND_FRIENDSHIP_REQUEST_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/sendfriendshiprequest";
+    private static final String ACCEPT_FRIENDSHIP_REQUEST_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/acceptfriendshiprequest";
     private static final String REMOVE_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removefriend";
     private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
@@ -21,6 +22,13 @@ public final class RestClientUtils {
     public static Response postFriendshipRequest(SendFriendshipRequestData data) {
         return ClientBuilder.newClient()
                 .target(SEND_FRIENDSHIP_REQUEST_URI_DB)
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(data, MediaType.APPLICATION_JSON));
+    }
+
+    public static Response postAcceptFriendshipRequest(AcceptFriendshipRequestData data) {
+        return ClientBuilder.newClient()
+                .target(ACCEPT_FRIENDSHIP_REQUEST_URI_DB)
                 .request(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
