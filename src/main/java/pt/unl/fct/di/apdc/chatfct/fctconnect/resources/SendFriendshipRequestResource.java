@@ -16,17 +16,17 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("/addfriend")
+@Path("/sendfriendshiprequest")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class AddFriendResource {
+public class SendFriendshipRequestResource {
 
-    private static final Logger LOG = Logger.getLogger(AddFriendResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(SendFriendshipRequestResource.class.getName());
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
     private final KeyFactory userKeyFactory = datastore.newKeyFactory().setKind(DatastoreTypes.USER_TYPE);
     private final MemcacheUtils memcacheUsers = MemcacheUtils.getMemcache(MemcacheUtils.USER_NAMESPACE);
     private final Gson gson = new Gson();
 
-    public AddFriendResource() {
+    public SendFriendshipRequestResource() {
     }
 
     private Entity getUserCached(String username) {
@@ -40,39 +40,39 @@ public class AddFriendResource {
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public Response doAddFriend(AddFriendData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        LOG.fine("User attempt to add friend");
+    public Response doSendFriendShipRequest(SendFriendshipRequestData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOG.fine("User attempt to send friendship request");
         final String token = TokenUtils.extractTokenFromHeaders(request);
         TokenInfo tokenInfo = verifyToken(token);
         if (tokenInfo == null) {
             return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
         }
         LOG.fine("Valid token. Proceeding...");
-        final String username = tokenInfo.getUsername();
-        final Response checkData = checkData(data, username);
+        final String requesterUsername = tokenInfo.getUsername();
+        final Response checkData = checkData(data, requesterUsername);
         if (checkData != null) {
             return checkData;
         }
-        Key usernameKey = userKeyFactory.newKey(username);
-        Key otherKey = userKeyFactory.newKey(data.friendUsername);
+        Key requesterKey = userKeyFactory.newKey(requesterUsername);
+        Key otherKey = userKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
-            Entity usernameOnDB;
-            final Entity userCached = getUserCached(username);
+            Entity requesterOnDB;
+            final Entity userCached = getUserCached(requesterUsername);
             final boolean isUserCached = isCached(userCached);
             if (isUserCached) {
-                usernameOnDB = userCached;
+                requesterOnDB = userCached;
             } else {
-                usernameOnDB = txn.get(usernameKey);
-                final Response checkUserOnDB = checkUserOnDB(usernameOnDB);
+                requesterOnDB = txn.get(requesterKey);
+                final Response checkUserOnDB = checkUserOnDB(requesterOnDB);
                 if (checkUserOnDB != null) {
                     txn.rollback();
                     return checkUserOnDB;
                 }
-                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), usernameOnDB);
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, requesterUsername), requesterOnDB);
             }
             Entity otherOnDB;
-            final Entity otherCached = getUserCached(data.friendUsername);
+            final Entity otherCached = getUserCached(data.username);
             final boolean isOtherCached = isCached(otherCached);
             if (isOtherCached) {
                 otherOnDB = otherCached;
@@ -83,17 +83,17 @@ public class AddFriendResource {
                     txn.rollback();
                     return checkOtherOnDB;
                 }
-                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, data.friendUsername), otherOnDB);
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, data.username), otherOnDB);
             }
-            final Response postFriendDBRequest = RestClientUtils.postFriend(data);
-            if (postFriendDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
+            final Response postFriendshipRequestDBRequest = RestClientUtils.postFriendshipRequest(data);
+            if (postFriendshipRequestDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
                 txn.commit();
-                LOG.fine("Friend was added to list");
+                LOG.fine("Friendship request was sent");
             } else {
                 txn.rollback();
                 LOG.fine("Server Error");
             }
-            return postFriendDBRequest;
+            return postFriendshipRequestDBRequest;
         } catch (Exception e) {
             txn.rollback();
             LOG.severe(e.getLocalizedMessage());
@@ -106,9 +106,9 @@ public class AddFriendResource {
         }
     }
 
-    private Response checkData(AddFriendData data, String username) {
+    private Response checkData(SendFriendshipRequestData data, String username) {
         if (data == null || !data.validateData()) {
-            LOG.fine("Invalid data: username is invalid");
+            LOG.fine("Invalid data: at least one field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
         } else if (!data.isTokenSameUser(username)) {
             LOG.fine("Invalid data: usernames dont match");
