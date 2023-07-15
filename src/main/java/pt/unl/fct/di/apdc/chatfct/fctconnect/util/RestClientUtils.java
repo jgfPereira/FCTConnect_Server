@@ -10,6 +10,7 @@ public final class RestClientUtils {
     private static final String SEND_FRIENDSHIP_REQUEST_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/sendfriendshiprequest";
     private static final String ACCEPT_FRIENDSHIP_REQUEST_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/acceptfriendshiprequest";
     private static final String REJECT_FRIENDSHIP_REQUEST_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/rejectfriendshiprequest";
+    private static final String SAVE_DEVICE_TOKEN_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/savedevicetoken";
     private static final String REMOVE_FRIEND_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removefriend";
     private static final String ADD_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/addonlineplayer";
     private static final String REMOVE_ONLINE_PLAYER_URI_DB = "https://fctconnectdb.oa.r.appspot.com/rest/removeonlineplayer";
@@ -37,6 +38,13 @@ public final class RestClientUtils {
     public static Response postRejectFriendshipRequest(RejectFriendshipRequestData data) {
         return ClientBuilder.newClient()
                 .target(REJECT_FRIENDSHIP_REQUEST_URI_DB)
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.entity(data, MediaType.APPLICATION_JSON));
+    }
+
+    public static Response postSaveDeviceToken(SaveDeviceTokenData data) {
+        return ClientBuilder.newClient()
+                .target(SAVE_DEVICE_TOKEN_URI_DB)
                 .request(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(data, MediaType.APPLICATION_JSON));
     }
