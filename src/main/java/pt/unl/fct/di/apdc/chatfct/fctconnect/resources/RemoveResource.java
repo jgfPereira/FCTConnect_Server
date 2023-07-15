@@ -100,6 +100,7 @@ public class RemoveResource {
             memcacheUsers.delete(String.format(MemcacheUtils.USER_ENTITY_KEY, username));
             txn.delete(key);
             txn.commit();
+            TokenUtils.revokeToken(tokenInfo.getTokenID());
             LOG.fine("Remove done: " + username);
             return Response.ok(gson.toJson("Remove done")).build();
         } catch (Exception e) {
