@@ -113,6 +113,9 @@ public class SendFriendshipRequestResource {
         } else if (!data.isTokenSameUser(username)) {
             LOG.fine("Invalid data: usernames dont match");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - usernames dont match")).build();
+        } else if (data.isFriendshipRequestToSameUser()) {
+            LOG.fine("Invalid data: cant send request to self");
+            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - cant send request to self")).build();
         }
         return null;
     }
