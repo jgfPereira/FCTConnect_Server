@@ -6,7 +6,7 @@ import io.jsonwebtoken.JwtException;
 import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.POST;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -39,7 +39,7 @@ public class ListResource {
         return e != null;
     }
 
-    @POST
+    @GET
     public Response doList(@Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("User attempt to list users");
         final String token = TokenUtils.extractTokenFromHeaders(request);
