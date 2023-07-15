@@ -16,7 +16,7 @@ public class SendFriendshipRequestData {
         return requesterUsername.equals(requesterToken);
     }
 
-    public boolean isFriendshipRequestToSameUser() {
+    public boolean validateFriendshipRequest() {
         return username.equals(requesterUsername);
     }
 }
