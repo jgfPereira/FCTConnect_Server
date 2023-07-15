@@ -2,8 +2,10 @@ package pt.unl.fct.di.apdc.chatfct.fctconnect.resources;
 
 import com.google.cloud.datastore.*;
 import com.google.gson.Gson;
-import io.jsonwebtoken.JwtException;
-import pt.unl.fct.di.apdc.chatfct.fctconnect.util.*;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.DatastoreTypes;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.MemcacheUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.RestClientUtils;
+import pt.unl.fct.di.apdc.chatfct.fctconnect.util.SaveDeviceTokenData;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -42,22 +44,15 @@ public class SaveDeviceTokenResource {
     @Consumes(MediaType.APPLICATION_JSON + ";charset=utf-8")
     public Response doSaveDeviceToken(SaveDeviceTokenData data, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOG.fine("User attempt to save device token");
-        final String token = TokenUtils.extractTokenFromHeaders(request);
-        TokenInfo tokenInfo = verifyToken(token);
-        if (tokenInfo == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).entity(gson.toJson("Invalid credentials")).build();
-        }
-        LOG.fine("Valid token. Proceeding...");
-        final String username = tokenInfo.getUsername();
-        final Response checkData = checkData(data, username);
+        final Response checkData = checkData(data);
         if (checkData != null) {
             return checkData;
         }
-        Key usernameKey = userKeyFactory.newKey(username);
+        Key usernameKey = userKeyFactory.newKey(data.username);
         Transaction txn = datastore.newTransaction();
         try {
             Entity userOnDB;
-            final Entity userCached = getUserCached(username);
+            final Entity userCached = getUserCached(data.username);
             final boolean isUserCached = isCached(userCached);
             if (isUserCached) {
                 userOnDB = userCached;
@@ -68,7 +63,7 @@ public class SaveDeviceTokenResource {
                     txn.rollback();
                     return checkUserOnDB;
                 }
-                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, username), userOnDB);
+                memcacheUsers.put(String.format(MemcacheUtils.USER_ENTITY_KEY, data.username), userOnDB);
             }
             final Response postSaveDeviceTokenDBRequest = RestClientUtils.postSaveDeviceToken(data);
             if (postSaveDeviceTokenDBRequest.getStatus() == Response.Status.OK.getStatusCode()) {
@@ -91,13 +86,10 @@ public class SaveDeviceTokenResource {
         }
     }
 
-    private Response checkData(SaveDeviceTokenData data, String username) {
+    private Response checkData(SaveDeviceTokenData data) {
         if (data == null || !data.validateData()) {
             LOG.fine("Invalid data: at least one field is null");
             return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - invalid data")).build();
-        } else if (!data.isTokenSameUser(username)) {
-            LOG.fine("Invalid data: usernames dont match");
-            return Response.status(Response.Status.BAD_REQUEST).entity(gson.toJson("Bad Request - usernames dont match")).build();
         }
         return null;
     }
@@ -108,14 +100,5 @@ public class SaveDeviceTokenResource {
             return Response.status(Response.Status.NOT_FOUND).entity(gson.toJson("Not Found - User does not exist")).build();
         }
         return null;
-    }
-
-    private TokenInfo verifyToken(final String token) {
-        try {
-            return TokenUtils.verifyToken(token);
-        } catch (JwtException ex) {
-            LOG.warning("Invalid token --> " + ex.getLocalizedMessage());
-            return null;
-        }
     }
 }

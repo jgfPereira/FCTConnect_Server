@@ -11,8 +11,4 @@ public class SaveDeviceTokenData {
     public boolean validateData() {
         return !(username == null || deviceToken == null);
     }
-
-    public boolean isTokenSameUser(String usernameToken) {
-        return username.equals(usernameToken);
-    }
 }
